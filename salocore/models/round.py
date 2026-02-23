@@ -44,9 +44,15 @@ class EvaluationCriterion(models.Model):
     weight = models.IntegerField()
     order_index = IntegerField()
 
+    def __str__(self):
+        return self.title
+
 
 class RoundRequirement(models.Model):
     round = models.ForeignKey(Round, on_delete=models.CASCADE)
     text = models.TextField()
     has_value = models.BooleanField(default=False)
     order_index = IntegerField()
+
+    def __str__(self):
+        return self.text
