@@ -1,5 +1,6 @@
 from django.db.models import IntegerField
 from django.db import models
+from saloboard import settings
 from .tournament import Tournament
 
 
@@ -29,6 +30,7 @@ class Round(models.Model):
     attachment = models.ForeignKey(Attachment, on_delete=models.CASCADE)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+    creator = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
 
     def __str__(self):
         return self.title
