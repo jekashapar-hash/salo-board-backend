@@ -3,6 +3,11 @@ from django.db import models
 from .tournament import Tournament
 
 
+class Attachment(models.Model):
+    label = models.CharField(max_length=100)
+    url = models.CharField(max_length=200)
+
+
 class Round(models.Model):
 
     class Status(models.TextChoices):
@@ -21,17 +26,12 @@ class Round(models.Model):
     )
     start_at = models.DateTimeField()
     deadline = models.DateTimeField()
-    attachment = models.ForeignKey()
+    attachment = models.ForeignKey(Attachment, on_delete=models.CASCADE)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
         return self.title
-
-
-class Attachment(models.Model):
-    label = models.CharField(max_length=100)
-    url = models.CharField(max_length=200)
 
 
 class EvaluationCriterion(models.Model):

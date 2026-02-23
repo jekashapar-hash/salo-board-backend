@@ -26,6 +26,11 @@ class UserJuryProfile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
 
 
+class TournamentHistory(models.Model):
+    user = models.ForeignKey(UserParticipantProfile, on_delete=models.CASCADE)
+    tournament = models.ForeignKey(Tournament, on_delete=models.CASCADE)
+
+
 class UserParticipantProfile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
     city = models.CharField(max_length=100)
@@ -33,8 +38,3 @@ class UserParticipantProfile(models.Model):
     telegram = models.CharField(max_length=100)
     discord = models.CharField(max_length=100)
     tournament_history = models.ForeignKey(TournamentHistory, on_delete=models.CASCADE)
-
-
-class TournamentHistory(models.Model):
-    user = models.ForeignKey(UserParticipantProfile, on_delete=models.CASCADE)
-    tournament = models.ForeignKey(Tournament, on_delete=models.CASCADE)
