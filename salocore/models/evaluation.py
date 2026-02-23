@@ -1,6 +1,6 @@
 from django.db import models
 from django.conf import settings
-from .round import EvaluationCreterion, RoundRequirement
+from .round import EvaluationCriterion, RoundRequirement
 from .submission import Submission
 
 
@@ -24,7 +24,7 @@ class Evaluation(models.Model):
 
 class CreterionScore(models.Model):
     evaluation = models.ForeignKey(Evaluation, on_delete=models.CASCADE)
-    creterion = models.ForeignKey(EvaluationCreterion, on_delete=models.CASCADE)
+    creterion = models.ForeignKey(EvaluationCriterion, on_delete=models.CASCADE)
     score = models.IntegerField()
     comment = models.TextField()
     updated_at = models.DateTimeField(auto_now=True)

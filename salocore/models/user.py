@@ -27,7 +27,7 @@ class UserJuryProfile(models.Model):
 
 
 class TournamentHistory(models.Model):
-    user = models.ForeignKey(UserParticipantProfile, on_delete=models.CASCADE)
+    user = models.ForeignKey('UserParticipantProfile', on_delete=models.CASCADE)
     tournament = models.ForeignKey(Tournament, on_delete=models.CASCADE)
 
 
