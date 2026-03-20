@@ -1,34 +1,20 @@
 from django.contrib.auth.models import AbstractUser
 from django.db import models
-from .tournament import Tournament
 
 
 class User(AbstractUser):
-
-    class Role(models.TextChoices):
-        JURY = "JR", "Jury"
-        PARTICIPANT = "PT", "Participant"
-        ADMIN = "AD", "Admin"
-
-    role = models.CharField(
-        max_length=20, choices=Role.choices, default=Role.PARTICIPANT
-    )
+    is_admin = models.BooleanField(default=False)
+    invite_code = models.CharField(max_length=100, null=True, blank=True)
 
     def __str__(self):
         return self.username
 
 
-class UserAdminProfile(models.Model):
-    user = models.OneToOneField(User, on_delete=models.CASCADE)
-
-
-class UserJuryProfile(models.Model):
-    user = models.OneToOneField(User, on_delete=models.CASCADE)
-
-
-class UserParticipantProfile(models.Model):
+class UserProfile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
     city = models.CharField(max_length=100)
     organization = models.CharField(max_length=100)
     telegram = models.CharField(max_length=100)
     discord = models.CharField(max_length=100)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)

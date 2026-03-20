@@ -4,3 +4,4 @@ from .team import *
 from .submission import *
 from .evaluation import *
 from .user import *
+from .categories import *

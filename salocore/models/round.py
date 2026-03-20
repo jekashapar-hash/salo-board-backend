@@ -1,55 +1,38 @@
-from django.db.models import IntegerField
 from django.db import models
 from saloboard import settings
 from .tournament import Tournament
 
 
-class Attachment(models.Model):
-    label = models.CharField(max_length=100)
-    url = models.CharField(max_length=200)
-
-
 class Round(models.Model):
-
     class Status(models.TextChoices):
         DRAFT = "DR", "Draft"
-        ACTIVE = "RG", "Active"
+        ACTIVE = "AC", "Active"
         SUBMISSION_CLOSED = "SC", "Submission Closed"
         EVALUATED = "EV", "Evaluated"
 
     tournament = models.ForeignKey(Tournament, on_delete=models.CASCADE)
     title = models.CharField(max_length=100)
     description = models.TextField()
-    requirements = models.TextField()
-    orderindex = IntegerField()
+    orderIndex = models.IntegerField()
     status = models.CharField(
         max_length=20, choices=Status.choices, default=Status.DRAFT
     )
     start_at = models.DateTimeField()
     deadline = models.DateTimeField()
-    attachment = models.ForeignKey(Attachment, on_delete=models.CASCADE)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
-    creator = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
 
     def __str__(self):
         return self.title
 
 
 class EvaluationCriterion(models.Model):
-
-    class Category(models.TextChoices):
-        BACKEND = "BE", "Backend"
-        DATABASE = "DB", "Database"
-        FRONTEND = "FE", "Frontend"
-        FUNCTIONALITY = "FU", "Functionality"
-
     round = models.ForeignKey(Round, on_delete=models.CASCADE)
-    category = models.CharField(max_length=20, choices=Category.choices)
+    category = models.CharField(max_length=100)
     title = models.CharField(max_length=100)
     max_score = models.IntegerField()
     weight = models.IntegerField()
-    order_index = IntegerField()
+    order_index = models.IntegerField()
 
     def __str__(self):
         return self.title
@@ -58,8 +41,14 @@ class EvaluationCriterion(models.Model):
 class RoundRequirement(models.Model):
     round = models.ForeignKey(Round, on_delete=models.CASCADE)
     text = models.TextField()
-    has_value = models.BooleanField(default=False)
-    order_index = IntegerField()
+    order_index = models.IntegerField()
 
     def __str__(self):
         return self.text
+
+
+class RoundAttachment(models.Model):
+    round = models.ForeignKey(Round, on_delete=models.CASCADE)
+    label = models.CharField(max_length=100)
+    url = models.CharField(max_length=200)
+    order_index = models.IntegerField()

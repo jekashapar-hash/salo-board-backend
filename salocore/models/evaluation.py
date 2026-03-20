@@ -5,7 +5,6 @@ from .submission import Submission
 
 
 class Evaluation(models.Model):
-
     class Status(models.TextChoices):
         DRAFT = "DR", "Draft"
         SUBMITTED = "SB", "Submitted"
@@ -19,15 +18,13 @@ class Evaluation(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     submitted_at = models.DateTimeField(null=True, blank=True)
-    is_all_requirement_satisfied = models.BooleanField(default=False)
 
 
-class CreterionScore(models.Model):
+class CriterionEvaluation(models.Model):
     evaluation = models.ForeignKey(Evaluation, on_delete=models.CASCADE)
-    creterion = models.ForeignKey(EvaluationCriterion, on_delete=models.CASCADE)
+    criterion = models.ForeignKey(EvaluationCriterion, on_delete=models.CASCADE)
     score = models.IntegerField()
     comment = models.TextField()
-    updated_at = models.DateTimeField(auto_now=True)
 
 
 class RequirementEvaluation(models.Model):
@@ -35,4 +32,3 @@ class RequirementEvaluation(models.Model):
     requirement = models.ForeignKey(RoundRequirement, on_delete=models.CASCADE)
     is_satisfied = models.BooleanField(default=False)
     comment = models.TextField()
-    updated_at = models.DateTimeField(auto_now=True)

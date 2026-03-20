@@ -8,6 +8,7 @@ class Tournament(models.Model):
         REGISTRATION = "RG", "Registration"
         RUNNING = "RN", "Running"
         FINISHED = "FN", "Finished"
+        ARCHIVED = "AR", "Archived"
 
     creator = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     title = models.CharField(max_length=100)
@@ -19,10 +20,12 @@ class Tournament(models.Model):
     start_date = models.DateTimeField()
     reg_open_at = models.DateTimeField()
     reg_close_at = models.DateTimeField()
+    min_team_size = models.IntegerField()
     max_team_size = models.IntegerField()
     is_team_visible = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+    ended_at = models.DateTimeField(null=True, blank=True)
 
     def __str__(self):
         return self.title
@@ -30,4 +33,9 @@ class Tournament(models.Model):
 
 class TournamentJury(models.Model):
     tournament = models.ForeignKey(Tournament, on_delete=models.CASCADE)
-    jury = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+
+
+class TournamentAdmin(models.Model):
+    tournament = models.ForeignKey(Tournament, on_delete=models.CASCADE)
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
