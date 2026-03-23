@@ -12,9 +12,9 @@ class User(AbstractUser):
 
 class UserProfile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
-    city = models.CharField(max_length=100)
-    organization = models.CharField(max_length=100)
-    telegram = models.CharField(max_length=100)
-    discord = models.CharField(max_length=100)
+    city = models.CharField(max_length=100, blank=True)
+    organization = models.CharField(max_length=100, blank=True)
+    telegram = models.CharField(max_length=100, blank=True)
+    discord = models.CharField(max_length=100, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

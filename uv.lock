@@ -38,18 +38,32 @@ wheels = [
 ]
 
 [[package]]
+name = "djangorestframework"
+version = "3.17.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "django" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/b1/46/615ad5425c7b941e6fd3f382d25b1aca680022200d8e5b87bfc665c4425d/djangorestframework-3.17.0.tar.gz", hash = "sha256:456fd992a33f9e64c9d0f47e85d9787db0efb44f894c1e513315b5e74765bd4c", size = 905671, upload-time = "2026-03-18T20:33:42.861Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/5f/ee/01dfe0e712d37007a4417bf7ba518a9e6830d4de009ed4bfdfebd45b99cf/djangorestframework-3.17.0-py3-none-any.whl", hash = "sha256:d84fe85f30b7ac6e8c0076ce9ff635e4eaedca5912f8d7d2926ce448c08533ba", size = 898818, upload-time = "2026-03-18T20:33:41.335Z" },
+]
+
+[[package]]
 name = "saloboard"
 version = "0.1.0"
 source = { virtual = "." }
 dependencies = [
     { name = "django" },
     { name = "django-jazzmin" },
+    { name = "djangorestframework" },
 ]
 
 [package.metadata]
 requires-dist = [
     { name = "django", specifier = "==6.0.2" },
     { name = "django-jazzmin", specifier = ">=3.0.2" },
+    { name = "djangorestframework", specifier = ">=3.17.0" },
 ]
 
 [[package]]
