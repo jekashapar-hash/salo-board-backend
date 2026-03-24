@@ -1,10 +1,16 @@
 from django.shortcuts import render
-
-# Create your views here.
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework import status
+from rest_framework.authtoken.models import Token
+from rest_framework.permissions import AllowAny
+from .models import User
+from .serializers import *
 
 
 # -------------------------- Auth ------------------------------------------
-@path_params()
+
+
 class RegisterView(APIView):
     permission_classes = [AllowAny]  # <-- доступ без авторизації
 
@@ -41,3 +47,6 @@ class LogoutView(APIView):
         except Exception:
             return Response({"error": "Ви не авторизовані"}, status=400)
         return Response({"message": "Вихід успішний"}, status=200)
+
+
+# --------------------------------------------------------------
