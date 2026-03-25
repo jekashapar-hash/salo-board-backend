@@ -11,7 +11,12 @@ class RegisterSerializer(serializers.Serializer):
 
 
 class TokenResponseSerializer(serializers.Serializer):
-    token = serializers.CharField()
+    access = serializers.CharField()
+    refresh = serializers.CharField()
+
+
+class LogoutRequestSerializer(serializers.Serializer):
+    refresh = serializers.CharField()
 
 
 class LogoutResponseSerializer(serializers.Serializer):

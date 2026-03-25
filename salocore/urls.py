@@ -9,7 +9,8 @@ from drf_spectacular.views import (
 
 urlpatterns = [
     path("register", RegisterView.as_view(), name="register"),
-    path("login", obtain_auth_token, name="login"),
+    path("login", CustomTokenObtainPairView.as_view(), name="login"),
+    path("token/refresh", CustomTokenRefreshView.as_view(), name="token_refresh"),
     path("logout", LogoutView.as_view(), name="logout"),
     path("schema", SpectacularAPIView.as_view(), name="schema"),
     path("docs", SpectacularSwaggerView.as_view(url_name="schema")),
