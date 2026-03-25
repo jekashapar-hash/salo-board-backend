@@ -22,6 +22,7 @@ class Tournament(models.Model):
     reg_close_at = models.DateTimeField()
     min_team_size = models.IntegerField()
     max_team_size = models.IntegerField()
+    max_team = models.IntegerField()
     is_team_visible = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

@@ -9,17 +9,17 @@ from .models import *
 class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.fields['email'] = serializers.EmailField()
-        if 'username' in self.fields:
-            del self.fields['username']
+        self.fields["email"] = serializers.EmailField()
+        if "username" in self.fields:
+            del self.fields["username"]
 
     def validate(self, attrs):
-        email = attrs.get('email')
+        email = attrs.get("email")
         try:
             user = User.objects.get(email=email)
             attrs[self.username_field] = user.username
         except User.DoesNotExist:
-            attrs[self.username_field] = 'dummy_invalid_username'
+            attrs[self.username_field] = "dummy_invalid_username"
 
         return super().validate(attrs)
 
@@ -40,3 +40,35 @@ class LogoutRequestSerializer(serializers.Serializer):
 
 class LogoutResponseSerializer(serializers.Serializer):
     message = serializers.CharField()
+
+
+# ----------------------------------------------
+
+
+class TournamentSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Tournament
+        fields = ["id", "title", "status", "start_date", "reg_open_at", "reg_close_at"]
+        read_only_fields = ("id",)
+
+
+class TournamentDetailSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Tournament
+        fields = [
+            "id",
+            "title",
+            "description",
+            "rules",
+            "status",
+            "start_date",
+            "reg_open_at",
+            "reg_close_at",
+            "min_team_size",
+            "max_team_size",
+            "max_team",
+            "is_team_visible",
+            "created_at",
+            "updated_at",
+            "ended_at",
+        ]

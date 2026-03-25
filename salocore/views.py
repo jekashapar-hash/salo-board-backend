@@ -3,9 +3,14 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.permissions import AllowAny, IsAuthenticated
-from .models import User
+from .models import User, Tournament
 from .serializers import *
-from drf_spectacular.utils import extend_schema, OpenApiResponse, OpenApiExample
+from drf_spectacular.utils import (
+    extend_schema,
+    OpenApiResponse,
+    OpenApiExample,
+    OpenApiParameter,
+)
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 
@@ -221,3 +226,66 @@ class LogoutView(APIView):
 
 
 # --------------------------------------------------------------
+
+
+class TournamentListView(APIView):
+    permission_classes = [AllowAny]
+
+    @extend_schema(
+        summary="Список турнірів",
+        description="Отримання списку всіх турнірів. Можна фільтрувати за назвою або статусом.",
+        parameters=[
+            OpenApiParameter(
+                name="name", description="Пошук по назві", required=False, type=str
+            ),
+            OpenApiParameter(
+                name="status",
+                description="Фільтр по статусу (напр. DR, RG)",
+                required=False,
+                type=str,
+            ),
+        ],
+        responses={200: TournamentSerializer(many=True)},
+    )
+    def get(self, request):
+        queryset = Tournament.objects.all()
+
+        name = request.query_params.get("name")
+        if name:
+            queryset = queryset.filter(title__icontains=name)
+
+        status_param = request.query_params.get("status")
+        if status_param and status_param != "all":
+            queryset = queryset.filter(status=status_param)
+
+        serializer = TournamentSerializer(queryset, many=True)
+        return Response(serializer.data)
+
+
+class TournamentDetailView(APIView):
+    permission_classes = [AllowAny]
+
+    @extend_schema(
+        summary="Деталі турніру",
+        description="Отримання детальної інформації про конкретний турнір за ID.",
+        responses={
+            200: TournamentDetailSerializer,
+            404: OpenApiResponse(
+                description="Турнір не знайдено",
+                response=dict,
+                examples=[
+                    OpenApiExample("Not Found", value={"error": "Турнір не найден"})
+                ],
+            ),
+        },
+    )
+    def get(self, request, tournament_id):
+        try:
+            tournament = Tournament.objects.get(id=tournament_id)
+        except Tournament.DoesNotExist:
+            return Response(
+                {"error": "Турнир не найден"}, status=status.HTTP_404_NOT_FOUND
+            )
+
+        serializer = TournamentDetailSerializer(tournament)
+        return Response(serializer.data)
