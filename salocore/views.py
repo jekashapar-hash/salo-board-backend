@@ -13,19 +13,21 @@ from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 
 
 class CustomTokenObtainPairView(TokenObtainPairView):
+    serializer_class = CustomTokenObtainPairSerializer
+
     @extend_schema(
         summary="Логін",
         description="Отримання JWT: access і refresh токенів через JSON body.",
         responses={
             200: TokenResponseSerializer,
             400: OpenApiResponse(
-                description="Не передані обов'язкові поля (username або password)",
+                description="Не передані обов'язкові поля (email або password)",
                 response=dict,
                 examples=[
                     OpenApiExample(
                         "Validation Error",
                         value={
-                            "username": ["This field is required."],
+                            "email": ["This field is required."],
                             "password": ["This field is required."],
                         },
                     )
@@ -82,7 +84,7 @@ class CustomTokenRefreshView(TokenRefreshView):
                         "Unauthorized",
                         value={
                             "detail": "Token is invalid or expired",
-                            "code": "token_not_valid"
+                            "code": "token_not_valid",
                         },
                     )
                 ],
@@ -119,7 +121,7 @@ class RegisterView(APIView):
                             "email": ["This field is required."],
                             "password": ["This field is required."],
                         },
-                    )
+                    ),
                 ],
             ),
         },
@@ -140,15 +142,16 @@ class RegisterView(APIView):
 
         username = str(uuid.uuid4())
 
-        invite_code = ''.join(random.choices(string.ascii_uppercase + string.digits, k=8))
+        invite_code = "".join(
+            random.choices(string.ascii_uppercase + string.digits, k=8)
+        )
         while User.objects.filter(invite_code=invite_code).exists():
-            invite_code = ''.join(random.choices(string.ascii_uppercase + string.digits, k=8))
+            invite_code = "".join(
+                random.choices(string.ascii_uppercase + string.digits, k=8)
+            )
 
         user = User.objects.create_user(
-            username=username, 
-            email=email, 
-            password=password,
-            invite_code=invite_code
+            username=username, email=email, password=password, invite_code=invite_code
         )
 
         refresh = RefreshToken.for_user(user)
@@ -185,7 +188,7 @@ class LogoutView(APIView):
                     OpenApiExample(
                         "Invalid Token / Error",
                         value={"error": "Невалідний токен або ви не авторизовані"},
-                    )
+                    ),
                 ],
             ),
             401: OpenApiResponse(
@@ -194,10 +197,12 @@ class LogoutView(APIView):
                 examples=[
                     OpenApiExample(
                         "Unauthorized",
-                        value={"detail": "Authentication credentials were not provided."}
+                        value={
+                            "detail": "Authentication credentials were not provided."
+                        },
                     )
-                ]
-            )
+                ],
+            ),
         },
     )
     def post(self, request):
