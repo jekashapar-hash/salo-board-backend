@@ -53,6 +53,41 @@ class CustomTokenRefreshView(TokenRefreshView):
     @extend_schema(
         summary="Оновлення токена",
         description="Отримання нового access токена по refresh токену.",
+        responses={
+            200: OpenApiResponse(
+                description="Успішне оновлення токена",
+                response=dict,
+                examples=[
+                    OpenApiExample(
+                        "Success",
+                        value={"access": "eyJhbGciOiJIUzI1NiIsInR5c..."},
+                    )
+                ],
+            ),
+            400: OpenApiResponse(
+                description="Не передано refresh токен",
+                response=dict,
+                examples=[
+                    OpenApiExample(
+                        "Validation Error",
+                        value={"refresh": ["This field is required."]},
+                    )
+                ],
+            ),
+            401: OpenApiResponse(
+                description="Недійсний або прострочений refresh токен",
+                response=dict,
+                examples=[
+                    OpenApiExample(
+                        "Unauthorized",
+                        value={
+                            "detail": "Token is invalid or expired",
+                            "code": "token_not_valid"
+                        },
+                    )
+                ],
+            ),
+        },
     )
     def post(self, request, *args, **kwargs):
         return super().post(request, *args, **kwargs)
@@ -62,22 +97,47 @@ class RegisterView(APIView):
     permission_classes = [AllowAny]  # <-- доступ без авторизації
 
     @extend_schema(
-        request=RegisterSerializer,
-        responses={201: TokenResponseSerializer},
-        description="Реєстрація нового користувача і отримання JWT токенів",
         summary="Реєстрація",
+        description="Реєстрація нового користувача і отримання JWT токенів",
+        request=RegisterSerializer,
+        responses={
+            201: OpenApiResponse(
+                description="Успішна реєстрація",
+                response=TokenResponseSerializer,
+            ),
+            400: OpenApiResponse(
+                description="Помилка валідації або такий користувач вже існує",
+                response=dict,
+                examples=[
+                    OpenApiExample(
+                        "User Exists",
+                        value={"error": "Користувач вже існує"},
+                    ),
+                    OpenApiExample(
+                        "Validation Error",
+                        value={
+                            "email": ["This field is required."],
+                            "password": ["This field is required."],
+                        },
+                    )
+                ],
+            ),
+        },
     )
     def post(self, request):
         serializer = RegisterSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
-        username = serializer.validated_data["username"]
+        email = serializer.validated_data["email"]
         password = serializer.validated_data["password"]
 
-        if User.objects.filter(username=username).exists():
-            return Response({"error": "Користувач вже існує"}, status=400)
+        if User.objects.filter(email=email).exists():
+            return Response({"error": "Користувач з таким email вже існує"}, status=400)
 
-        user = User.objects.create_user(username=username, password=password)
+        import uuid
+        username = str(uuid.uuid4())
+
+        user = User.objects.create_user(username=username, email=email, password=password)
 
         refresh = RefreshToken.for_user(user)
 
@@ -94,10 +154,39 @@ class LogoutView(APIView):
     permission_classes = [IsAuthenticated]
 
     @extend_schema(
-        request=LogoutRequestSerializer,
-        responses={200: LogoutResponseSerializer, 400: dict},
-        description="Видаляє refresh токен поточного користувача (додає в blacklist)",
         summary="Логаут",
+        description="Видаляє refresh токен поточного користувача (додає в blacklist)",
+        request=LogoutRequestSerializer,
+        responses={
+            200: OpenApiResponse(
+                description="Успішний вихід",
+                response=LogoutResponseSerializer,
+            ),
+            400: OpenApiResponse(
+                description="Невалідний токен, відсутній токен або користувач не авторизовані",
+                response=dict,
+                examples=[
+                    OpenApiExample(
+                        "Missing Token",
+                        value={"error": "Refresh токен обов'язковий"},
+                    ),
+                    OpenApiExample(
+                        "Invalid Token / Error",
+                        value={"error": "Невалідний токен або ви не авторизовані"},
+                    )
+                ],
+            ),
+            401: OpenApiResponse(
+                description="Користувач не авторизований",
+                response=dict,
+                examples=[
+                    OpenApiExample(
+                        "Unauthorized",
+                        value={"detail": "Authentication credentials were not provided."}
+                    )
+                ]
+            )
+        },
     )
     def post(self, request):
         try:
