@@ -135,9 +135,21 @@ class RegisterView(APIView):
             return Response({"error": "Користувач з таким email вже існує"}, status=400)
 
         import uuid
+        import string
+        import random
+
         username = str(uuid.uuid4())
 
-        user = User.objects.create_user(username=username, email=email, password=password)
+        invite_code = ''.join(random.choices(string.ascii_uppercase + string.digits, k=8))
+        while User.objects.filter(invite_code=invite_code).exists():
+            invite_code = ''.join(random.choices(string.ascii_uppercase + string.digits, k=8))
+
+        user = User.objects.create_user(
+            username=username, 
+            email=email, 
+            password=password,
+            invite_code=invite_code
+        )
 
         refresh = RefreshToken.for_user(user)
 
