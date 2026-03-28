@@ -381,3 +381,440 @@ class TournamentLeaderboardView(APIView):
 
         serializer = LeaderboardItemSerializer(leaderboard_data, many=True)
         return Response(serializer.data)
+
+
+from .utils import check_and_update_round_deadlines, check_tournament_deadlines
+from .permissions import IsTournamentCreator, IsTournamentJury, IsTournamentParticipant
+
+
+class RoundListView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    @extend_schema(
+        summary="Список раундів турніру",
+        description="Повертає раунди турніру. Чернетки бачить тільки творець турніру.",
+        parameters=[
+            OpenApiParameter(
+                name="status",
+                description="Фільтр по статусу (напр. AC, EV)",
+                required=False,
+                type=str,
+            )
+        ],
+        responses=RoundSerializer(many=True),
+    )
+    def get(self, request, tournament_id):
+        try:
+            tournament = Tournament.objects.get(id=tournament_id)
+        except Tournament.DoesNotExist:
+            return Response(status=status.HTTP_404_NOT_FOUND)
+
+        check_tournament_deadlines(tournament)
+
+        rounds = Round.objects.filter(tournament=tournament)
+
+        status_param = request.query_params.get("status")
+        if status_param:
+            rounds = rounds.filter(status=status_param)
+
+        if tournament.creator != request.user:
+            rounds = rounds.exclude(status=Round.Status.DRAFT)
+
+        serializer = RoundSerializer(rounds, many=True)
+        return Response(serializer.data)
+
+
+class RoundDetailView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    @extend_schema(summary="Деталі раунду", responses=RoundSerializer)
+    def get(self, request, tournament_id, round_id):
+        try:
+            round_obj = Round.objects.get(id=round_id, tournament_id=tournament_id)
+        except Round.DoesNotExist:
+            return Response(status=status.HTTP_404_NOT_FOUND)
+
+        check_and_update_round_deadlines(round_obj)
+
+        if (
+            round_obj.status == Round.Status.DRAFT
+            and round_obj.tournament.creator != request.user
+        ):
+            return Response(
+                {"error": "Чернетки недоступні"}, status=status.HTTP_403_FORBIDDEN
+            )
+
+        serializer = RoundSerializer(round_obj)
+        return Response(serializer.data)
+
+
+class CriterionListView(APIView):
+    permission_classes = [AllowAny]
+
+    @extend_schema(
+        summary="Список критеріїв раунду",
+        responses=EvaluationCriterionSerializer(many=True),
+    )
+    def get(self, request, tournament_id, round_id):
+        try:
+            round_obj = Round.objects.get(id=round_id, tournament_id=tournament_id)
+        except Round.DoesNotExist:
+            return Response(status=status.HTTP_404_NOT_FOUND)
+        criterions = EvaluationCriterion.objects.filter(round=round_obj)
+        serializer = EvaluationCriterionSerializer(criterions, many=True)
+        return Response(serializer.data)
+
+
+class RequirementListView(APIView):
+    permission_classes = [AllowAny]
+
+    @extend_schema(
+        summary="Список вимог раунду", responses=RoundRequirementSerializer(many=True)
+    )
+    def get(self, request, tournament_id, round_id):
+        try:
+            round_obj = Round.objects.get(id=round_id, tournament_id=tournament_id)
+        except Round.DoesNotExist:
+            return Response(status=status.HTTP_404_NOT_FOUND)
+        requirements = RoundRequirement.objects.filter(round=round_obj)
+        serializer = RoundRequirementSerializer(requirements, many=True)
+        return Response(serializer.data)
+
+
+class AttachmentListView(APIView):
+    permission_classes = [AllowAny]
+
+    @extend_schema(
+        summary="Список матеріалів раунду",
+        responses=RoundAttachmentSerializer(many=True),
+    )
+    def get(self, request, tournament_id, round_id):
+        try:
+            round_obj = Round.objects.get(id=round_id, tournament_id=tournament_id)
+        except Round.DoesNotExist:
+            return Response(status=status.HTTP_404_NOT_FOUND)
+        attachments = RoundAttachment.objects.filter(round=round_obj)
+        serializer = RoundAttachmentSerializer(attachments, many=True)
+        return Response(serializer.data)
+
+
+class SubmissionListView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    @extend_schema(
+        summary="Список сабмітів раунду", responses=SubmissionSerializer(many=True)
+    )
+    def get(self, request, tournament_id, round_id):
+        try:
+            round_obj = Round.objects.get(id=round_id, tournament_id=tournament_id)
+        except Round.DoesNotExist:
+            return Response(status=status.HTTP_404_NOT_FOUND)
+
+        check_and_update_round_deadlines(round_obj)
+
+        is_creator = round_obj.tournament.creator == request.user
+        is_jury = TournamentJury.objects.filter(
+            tournament_id=tournament_id, user=request.user
+        ).exists()
+
+        if is_creator or is_jury:
+            submissions = Submission.objects.filter(round_id=round_id)
+        else:
+            submissions = Submission.objects.filter(
+                round_id=round_id, team__teammember__user=request.user
+            )
+
+        serializer = SubmissionSerializer(submissions, many=True)
+        return Response(serializer.data)
+
+    @extend_schema(
+        summary="Створення сабміту",
+        request=SubmissionSerializer,
+        responses=SubmissionSerializer,
+    )
+    def post(self, request, tournament_id, round_id):
+        is_participant = (
+            TeamMember.objects.filter(
+                team__tournament_id=tournament_id, user=request.user
+            )
+            .exclude(team__status=Team.Status.DISQUALIFIED)
+            .first()
+        )
+
+        if not is_participant:
+            return Response(
+                {"error": "Ви не є учасником або команда дискваліфікована."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
+        try:
+            round_obj = Round.objects.get(id=round_id, tournament_id=tournament_id)
+        except Round.DoesNotExist:
+            return Response(status=status.HTTP_404_NOT_FOUND)
+
+        if timezone.now() > round_obj.deadline:
+            return Response(
+                {"error": "Термін здачі пройшов."}, status=status.HTTP_400_BAD_REQUEST
+            )
+
+        if Submission.objects.filter(
+            round_id=round_id, team=is_participant.team
+        ).exists():
+            return Response(
+                {"error": "Сабміт вже створений."}, status=status.HTTP_400_BAD_REQUEST
+            )
+
+        serializer = SubmissionSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save(
+                round=round_obj,
+                team=is_participant.team,
+                status=Submission.Status.DRAFT,
+            )
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class SubmissionDetailView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get_object(self, round_id, submission_id, user):
+        try:
+            sub = Submission.objects.get(id=submission_id, round_id=round_id)
+            if (
+                sub.round.tournament.creator == user
+                or TournamentJury.objects.filter(
+                    tournament=sub.round.tournament, user=user
+                ).exists()
+            ):
+                return sub
+            if sub.team.teammember_set.filter(user=user).exists():
+                return sub
+            return None
+        except Submission.DoesNotExist:
+            return None
+
+    @extend_schema(summary="Деталі сабміту", responses=SubmissionSerializer)
+    def get(self, request, tournament_id, round_id, submission_id):
+        sub = self.get_object(round_id, submission_id, request.user)
+        if not sub:
+            return Response(status=status.HTTP_404_NOT_FOUND)
+
+        check_and_update_round_deadlines(sub.round)
+        serializer = SubmissionSerializer(sub)
+        return Response(serializer.data)
+
+    @extend_schema(
+        summary="Редагування сабміту",
+        request=SubmissionSerializer,
+        responses=SubmissionSerializer,
+    )
+    def patch(self, request, tournament_id, round_id, submission_id):
+        sub = self.get_object(round_id, submission_id, request.user)
+        if not sub:
+            return Response(status=status.HTTP_404_NOT_FOUND)
+
+        if not sub.team.teammember_set.filter(user=request.user).exists():
+            return Response(
+                {"error": "Лише учасники команди можуть редагувати сабміт."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
+        if sub.team.status == Team.Status.DISQUALIFIED:
+            return Response(
+                {"error": "Команда дискваліфікована."}, status=status.HTTP_403_FORBIDDEN
+            )
+
+        round_passed = timezone.now() > sub.round.deadline
+        new_status = request.data.get("status")
+
+        if round_passed:
+            return Response(
+                {"error": "Термін здачі пройшов."}, status=status.HTTP_400_BAD_REQUEST
+            )
+
+        if (
+            sub.status == Submission.Status.SUBMITTED
+            and new_status != Submission.Status.DRAFT
+        ):
+            return Response(
+                {"error": "Сабміт відправлено. Скасуйте (status=DR), щоб редагувати."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        serializer = SubmissionSerializer(sub, data=request.data, partial=True)
+        if serializer.is_valid():
+            if (
+                new_status == Submission.Status.SUBMITTED
+                and sub.status == Submission.Status.DRAFT
+            ):
+                sub.submitted_at = timezone.now()
+                serializer.save(submitted_at=timezone.now())
+            else:
+                serializer.save()
+
+
+class EvaluationDetailView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    @extend_schema(
+        summary="Деталі або створення оцінки", responses=EvaluationSerializer
+    )
+    def get(self, request, tournament_id, round_id, submission_id):
+        is_jury = TournamentJury.objects.filter(
+            tournament_id=tournament_id, user=request.user
+        ).exists()
+        is_creator = Tournament.objects.filter(
+            id=tournament_id, creator=request.user
+        ).exists()
+
+        if not (is_jury or is_creator):
+            return Response(status=status.HTTP_403_FORBIDDEN)
+
+        try:
+            sub = Submission.objects.get(id=submission_id, round_id=round_id)
+        except Submission.DoesNotExist:
+            return Response(status=status.HTTP_404_NOT_FOUND)
+
+        evaluation = Evaluation.objects.filter(
+            submission=sub, jury=request.user
+        ).first()
+
+        if not evaluation and is_jury:
+            evaluation = Evaluation.objects.create(
+                submission=sub, jury=request.user, status=Evaluation.Status.DRAFT
+            )
+            criterions = EvaluationCriterion.objects.filter(round=sub.round)
+            for c in criterions:
+                CriterionEvaluation.objects.create(
+                    evaluation=evaluation, criterion=c, score=0, comment=""
+                )
+
+            reqs = RoundRequirement.objects.filter(round=sub.round)
+            for r in reqs:
+                RequirementEvaluation.objects.create(
+                    evaluation=evaluation, requirement=r, is_satisfied=False, comment=""
+                )
+
+        if not evaluation:
+            return Response(
+                {"error": "Оцінка не знайдена."}, status=status.HTTP_404_NOT_FOUND
+            )
+
+        serializer = EvaluationSerializer(evaluation)
+        return Response(serializer.data)
+
+    @extend_schema(
+        summary="Оновлення оцінки",
+        request=EvaluationSerializer,
+        responses=EvaluationSerializer,
+    )
+    def patch(self, request, tournament_id, round_id, submission_id):
+        evaluation = Evaluation.objects.filter(
+            submission_id=submission_id, jury=request.user
+        ).first()
+        if not evaluation:
+            return Response(status=status.HTTP_404_NOT_FOUND)
+
+        if (
+            evaluation.status == Evaluation.Status.SUBMITTED
+            and request.data.get("status") != Evaluation.Status.DRAFT
+        ):
+            return Response(
+                {"error": "Оцінка вже збережена. Скасуйте для редагування."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        new_status = request.data.get("status")
+        if (
+            new_status == Evaluation.Status.SUBMITTED
+            and evaluation.status == Evaluation.Status.DRAFT
+        ):
+            evaluation.submitted_at = timezone.now()
+
+        serializer = EvaluationSerializer(evaluation, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class CriterionEvaluationDetailView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    @extend_schema(
+        summary="Оновлення балу за критерій", request=CriterionEvaluationSerializer
+    )
+    def patch(self, request, tournament_id, round_id, eval_id, crit_eval_id):
+        try:
+            ce = CriterionEvaluation.objects.get(
+                id=crit_eval_id, evaluation_id=eval_id, evaluation__jury=request.user
+            )
+        except CriterionEvaluation.DoesNotExist:
+            return Response(status=status.HTTP_404_NOT_FOUND)
+
+        if ce.evaluation.status == Evaluation.Status.SUBMITTED:
+            return Response(
+                {"error": "Робота вже оцінена і не є чернеткою."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
+        serializer = CriterionEvaluationSerializer(ce, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class RequirementEvaluationDetailView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    @extend_schema(summary="Оновлення вимоги", request=RequirementEvaluationSerializer)
+    def patch(self, request, tournament_id, round_id, eval_id, req_eval_id):
+        try:
+            re = RequirementEvaluation.objects.get(
+                id=req_eval_id, evaluation_id=eval_id, evaluation__jury=request.user
+            )
+        except RequirementEvaluation.DoesNotExist:
+            return Response(status=status.HTTP_404_NOT_FOUND)
+
+        if re.evaluation.status == Evaluation.Status.SUBMITTED:
+            return Response(
+                {"error": "Робота вже оцінена."}, status=status.HTTP_403_FORBIDDEN
+            )
+
+        serializer = RequirementEvaluationSerializer(
+            re, data=request.data, partial=True
+        )
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class EvaluationCriterionListView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    @extend_schema(summary="Список оцінених критеріїв")
+    def get(self, request, tournament_id, round_id, eval_id):
+        criterions = CriterionEvaluation.objects.filter(evaluation_id=eval_id)
+        if not Tournament.objects.filter(
+            id=tournament_id, creator=request.user
+        ).exists():
+            criterions = criterions.filter(evaluation__jury=request.user)
+        serializer = CriterionEvaluationSerializer(criterions, many=True)
+        return Response(serializer.data)
+
+
+class EvaluationRequirementListView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    @extend_schema(summary="Список перевірених вимог")
+    def get(self, request, tournament_id, round_id, eval_id):
+        reqs = RequirementEvaluation.objects.filter(evaluation_id=eval_id)
+        if not Tournament.objects.filter(
+            id=tournament_id, creator=request.user
+        ).exists():
+            reqs = reqs.filter(evaluation__jury=request.user)
+        serializer = RequirementEvaluationSerializer(reqs, many=True)
+        return Response(serializer.data)

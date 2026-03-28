@@ -31,4 +31,60 @@ urlpatterns = [
         TournamentLeaderboardView.as_view(),
         name="tournament-leaderboard",
     ),
+    path(
+        "tournaments/<int:tournament_id>/rounds",
+        RoundListView.as_view(),
+        name="tournament-rounds",
+    ),
+    path(
+        "tournaments/<int:tournament_id>/rounds/<int:round_id>",
+        RoundDetailView.as_view(),
+        name="tournament-round-detail",
+    ),
+    path(
+        "tournaments/<int:tournament_id>/rounds/<int:round_id>/criterions",
+        CriterionListView.as_view(),
+        name="tournament-round-criterions",
+    ),
+    path(
+        "tournaments/<int:tournament_id>/rounds/<int:round_id>/requirements",
+        RequirementListView.as_view(),
+        name="tournament-round-requirements",
+    ),
+    path(
+        "tournaments/<int:tournament_id>/rounds/<int:round_id>/attachments",
+        AttachmentListView.as_view(),
+        name="tournament-round-attachments",
+    ),
+    path(
+        "tournaments/<int:tournament_id>/rounds/<int:round_id>/submissions",
+        SubmissionListView.as_view(),
+        name="tournament-round-submissions",
+    ),
+    path(
+        "tournaments/<int:tournament_id>/rounds/<int:round_id>/submissions/<int:submission_id>",
+        SubmissionDetailView.as_view(),
+        name="tournament-round-submission-detail",
+    ),
+    path(
+        "tournaments/<int:tournament_id>/rounds/<int:round_id>/submissions/<int:submission_id>/evaluation",
+        EvaluationDetailView.as_view(),
+    ),
+    path(
+        "tournaments/<int:tournament_id>/rounds/<int:round_id>/evaluations/<int:eval_id>/criterion-evaluations",
+        EvaluationCriterionListView.as_view(),
+    ),
+    path(
+        "tournaments/<int:tournament_id>/rounds/<int:round_id>/evaluations/<int:eval_id>/criterion-evaluations/<int:crit_eval_id>",
+        CriterionEvaluationDetailView.as_view(),
+    ),
+    path(
+        "tournaments/<int:tournament_id>/rounds/<int:round_id>/evaluations/<int:eval_id>/requirement-evaluations",
+        EvaluationRequirementListView.as_view(),
+    ),
+    path(
+        "tournaments/<int:tournament_id>/rounds/<int:round_id>/evaluations/<int:eval_id>/requirement-evaluations/<int:req_eval_id>",
+        RequirementEvaluationDetailView.as_view(),
+    ),
 ]
+
