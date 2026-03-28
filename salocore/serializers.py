@@ -48,7 +48,15 @@ class LogoutResponseSerializer(serializers.Serializer):
 class TournamentSerializer(serializers.ModelSerializer):
     class Meta:
         model = Tournament
-        fields = ["id", "title", "status", "start_date", "reg_open_at", "reg_close_at"]
+        fields = [
+            "id",
+            "title",
+            "status",
+            "start_date",
+            "reg_open_at",
+            "reg_close_at",
+            "ended_at",
+        ]
         read_only_fields = ("id",)
 
 
@@ -68,7 +76,18 @@ class TournamentDetailSerializer(serializers.ModelSerializer):
             "max_team_size",
             "max_team",
             "is_team_visible",
-            "created_at",
-            "updated_at",
             "ended_at",
         ]
+
+
+class TeamSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Team
+        fields = ["name", "status"]
+        read_only_fields = ("id",)
+
+
+class LeaderboardItemSerializer(serializers.Serializer):
+    team_id = serializers.IntegerField()
+    team_name = serializers.CharField()
+    score = serializers.IntegerField()

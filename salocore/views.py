@@ -3,7 +3,9 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.permissions import AllowAny, IsAuthenticated
-from .models import User, Tournament
+from .models import User, Tournament, Team, Round, Submission, CriterionEvaluation
+from django.db.models import Sum, Value
+from django.db.models.functions import Coalesce
 from .serializers import *
 from drf_spectacular.utils import (
     extend_schema,
@@ -288,4 +290,94 @@ class TournamentDetailView(APIView):
             )
 
         serializer = TournamentDetailSerializer(tournament)
+        return Response(serializer.data)
+
+
+class TournamentTeamsView(APIView):
+    permission_classes = [AllowAny]
+
+    @extend_schema(
+        summary="Команди турніру",
+        description="Отримання списку команд цього турніру, якщо is_team_visible = True.",
+        responses={
+            200: TeamSerializer(many=True),
+            403: OpenApiResponse(
+                description="Перегляд команд заборонено (is_team_visible=False)"
+            ),
+            404: OpenApiResponse(description="Турнір не знайдено"),
+        },
+    )
+    def get(self, request, tournament_id):
+        try:
+            tournament = Tournament.objects.get(id=tournament_id)
+        except Tournament.DoesNotExist:
+            return Response(
+                {"error": "Турнір не знайдено"}, status=status.HTTP_404_NOT_FOUND
+            )
+
+        if not tournament.is_team_visible:
+            return Response(
+                {"error": "Перегляд команд заборонено"},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
+        teams = Team.objects.filter(tournament=tournament)
+        serializer = TeamSerializer(teams, many=True)
+        return Response(serializer.data)
+
+
+class TournamentLeaderboardView(APIView):
+    permission_classes = [AllowAny]
+
+    @extend_schema(
+        summary="Лідерборд турніру",
+        description="Отримання відсортованого списку команд і їх оцінок з останнього завершеного раунду.",
+        responses={
+            200: LeaderboardItemSerializer(many=True),
+            404: OpenApiResponse(description="Турнір не знайдено"),
+        },
+    )
+    def get(self, request, tournament_id):
+        try:
+            tournament = Tournament.objects.get(id=tournament_id)
+        except Tournament.DoesNotExist:
+            return Response(
+                {"error": "Турнір не знайдено"}, status=status.HTTP_404_NOT_FOUND
+            )
+
+        # Шукаємо останній завершений раунд турніру
+        last_round = (
+            Round.objects.filter(tournament=tournament, status=Round.Status.EVALUATED)
+            .order_by("-orderIndex")
+            .first()
+        )
+
+        if not last_round:
+            return Response([], status=status.HTTP_200_OK)
+
+        # Отримуємо сабміти раунду та рахуємо суму балів
+        submissions = (
+            Submission.objects.filter(round=last_round)
+            .select_related("team")
+            .annotate(
+                total_score=Coalesce(
+                    Sum("evaluation__criterionevaluation__score"), Value(0)
+                )
+            )
+        )
+
+        leaderboard_data = []
+        for submission in submissions:
+            leaderboard_data.append(
+                {
+                    "team_id": submission.team.id,
+                    "team_name": submission.team.name,
+                    "score": submission.total_score,
+                }
+            )
+
+        # Сортування за зменшенням оцінки
+        leaderboard_data.sort(key=lambda x: x["score"], reverse=True)
+
+        serializer = LeaderboardItemSerializer(leaderboard_data, many=True)
         return Response(serializer.data)
