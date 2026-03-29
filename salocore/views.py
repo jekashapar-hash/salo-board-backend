@@ -227,7 +227,9 @@ class LogoutView(APIView):
             )
 
 
-# --------------------------------------------------------------
+# ---------------------------------------------------------------------
+# ---------------------------------------------------------------------
+# ---------------------------------------------------------------------
 
 
 class TournamentListView(APIView):
@@ -383,6 +385,9 @@ class TournamentLeaderboardView(APIView):
         return Response(serializer.data)
 
 
+# ----------------------ROUNDS----------------------
+
+
 from .utils import check_and_update_round_deadlines, check_tournament_deadlines
 from .permissions import IsTournamentCreator, IsTournamentJury, IsTournamentParticipant
 
@@ -496,6 +501,9 @@ class AttachmentListView(APIView):
         attachments = RoundAttachment.objects.filter(round=round_obj)
         serializer = RoundAttachmentSerializer(attachments, many=True)
         return Response(serializer.data)
+
+
+# ----------------------SUBMISSIONS----------------------
 
 
 class SubmissionListView(APIView):
@@ -654,6 +662,9 @@ class SubmissionDetailView(APIView):
                 serializer.save()
 
 
+# ----------------------EVALUATIONS----------------------
+
+
 class EvaluationDetailView(APIView):
     permission_classes = [IsAuthenticated]
 
@@ -745,10 +756,10 @@ class CriterionEvaluationDetailView(APIView):
     @extend_schema(
         summary="Оновлення балу за критерій", request=CriterionEvaluationSerializer
     )
-    def patch(self, request, tournament_id, round_id, eval_id, crit_eval_id):
+    def patch(self, request, tournament_id, round_id, submission_id, crit_eval_id):
         try:
             ce = CriterionEvaluation.objects.get(
-                id=crit_eval_id, evaluation_id=eval_id, evaluation__jury=request.user
+                id=crit_eval_id, evaluation__submission_id=submission_id, evaluation__jury=request.user
             )
         except CriterionEvaluation.DoesNotExist:
             return Response(status=status.HTTP_404_NOT_FOUND)
@@ -770,10 +781,10 @@ class RequirementEvaluationDetailView(APIView):
     permission_classes = [IsAuthenticated]
 
     @extend_schema(summary="Оновлення вимоги", request=RequirementEvaluationSerializer)
-    def patch(self, request, tournament_id, round_id, eval_id, req_eval_id):
+    def patch(self, request, tournament_id, round_id, submission_id, req_eval_id):
         try:
             re = RequirementEvaluation.objects.get(
-                id=req_eval_id, evaluation_id=eval_id, evaluation__jury=request.user
+                id=req_eval_id, evaluation__submission_id=submission_id, evaluation__jury=request.user
             )
         except RequirementEvaluation.DoesNotExist:
             return Response(status=status.HTTP_404_NOT_FOUND)
@@ -796,8 +807,8 @@ class EvaluationCriterionListView(APIView):
     permission_classes = [IsAuthenticated]
 
     @extend_schema(summary="Список оцінених критеріїв")
-    def get(self, request, tournament_id, round_id, eval_id):
-        criterions = CriterionEvaluation.objects.filter(evaluation_id=eval_id)
+    def get(self, request, tournament_id, round_id, submission_id):
+        criterions = CriterionEvaluation.objects.filter(evaluation__submission_id=submission_id)
         if not Tournament.objects.filter(
             id=tournament_id, creator=request.user
         ).exists():
@@ -810,8 +821,8 @@ class EvaluationRequirementListView(APIView):
     permission_classes = [IsAuthenticated]
 
     @extend_schema(summary="Список перевірених вимог")
-    def get(self, request, tournament_id, round_id, eval_id):
-        reqs = RequirementEvaluation.objects.filter(evaluation_id=eval_id)
+    def get(self, request, tournament_id, round_id, submission_id):
+        reqs = RequirementEvaluation.objects.filter(evaluation__submission_id=submission_id)
         if not Tournament.objects.filter(
             id=tournament_id, creator=request.user
         ).exists():

@@ -71,20 +71,19 @@ urlpatterns = [
         EvaluationDetailView.as_view(),
     ),
     path(
-        "tournaments/<int:tournament_id>/rounds/<int:round_id>/evaluations/<int:eval_id>/criterion-evaluations",
+        "tournaments/<int:tournament_id>/rounds/<int:round_id>/submissions/<int:submission_id>/evaluation/criterion-evaluation",
         EvaluationCriterionListView.as_view(),
     ),
     path(
-        "tournaments/<int:tournament_id>/rounds/<int:round_id>/evaluations/<int:eval_id>/criterion-evaluations/<int:crit_eval_id>",
+        "tournaments/<int:tournament_id>/rounds/<int:round_id>/submissions/<int:submission_id>/evaluation/criterion-evaluation/<int:crit_eval_id>",
         CriterionEvaluationDetailView.as_view(),
     ),
     path(
-        "tournaments/<int:tournament_id>/rounds/<int:round_id>/evaluations/<int:eval_id>/requirement-evaluations",
+        "tournaments/<int:tournament_id>/rounds/<int:round_id>/submissions/<int:submission_id>/evaluation/requirement-evaluation",
         EvaluationRequirementListView.as_view(),
     ),
     path(
-        "tournaments/<int:tournament_id>/rounds/<int:round_id>/evaluations/<int:eval_id>/requirement-evaluations/<int:req_eval_id>",
+        "tournaments/<int:tournament_id>/rounds/<int:round_id>/submissions/<int:submission_id>/evaluation/requirement-evaluation/<int:req_eval_id>",
         RequirementEvaluationDetailView.as_view(),
     ),
 ]
-
