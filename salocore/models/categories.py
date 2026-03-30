@@ -35,11 +35,12 @@ class Notification(models.Model):
         ARCHIVED = "AR", "Archived"
 
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    team = models.ForeignKey("Team", on_delete=models.CASCADE, blank=True)
     title = models.CharField(max_length=100)
     message = models.TextField()
     type = models.CharField(max_length=20, choices=Type.choices)
     action_type = models.CharField(max_length=20, choices=ActionType.choices)
-    action_url = models.CharField(max_length=200)
+    action_url = models.CharField(max_length=200, blank=True)
     status = models.CharField(
         max_length=20, choices=Status.choices, default=Status.UNREAD
     )

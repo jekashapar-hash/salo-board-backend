@@ -57,14 +57,48 @@ urlpatterns = [
         name="tournament-round-attachments",
     ),
     path(
-        "tournaments/<int:tournament_id>/rounds/<int:round_id>/submissions",
-        SubmissionListView.as_view(),
-        name="tournament-round-submissions",
+        "teams",
+        TeamListView.as_view(),
     ),
     path(
-        "tournaments/<int:tournament_id>/rounds/<int:round_id>/submissions/<int:submission_id>",
-        SubmissionDetailView.as_view(),
-        name="tournament-round-submission-detail",
+        "teams/archive",
+        TeamArchiveListView.as_view(),
+    ),
+    path(
+        "teams/<int:team_id>",
+        TeamDetailView.as_view(),
+    ),
+    path(
+        "teams/<int:team_id>/participant",
+        TeamParticipantListCreateView.as_view(),
+    ),
+    path(
+        "teams/<int:team_id>/participant/<str:user_id>",
+        TeamParticipantDetailView.as_view(),
+    ),
+    path(
+        "teams/<int:team_id>/participant/can-add",
+        TeamCanCreateParticipantView.as_view(),
+    ),
+    path(
+        "teams/<int:team_id>/submit",
+        TeamSubmitListView.as_view(),
+    ),
+    path(
+        "teams/<int:team_id>/submit/<int:submit_id>",
+        TeamSubmitDetailView.as_view(),
+    ),
+    path(
+        "notifications",
+        NotificationListView.as_view(),
+    ),
+    path(
+        "notifications/archive",
+        NotificationArchiveListView.as_view(),
+    ),
+    path(
+        "notifications/<int:notification_id>",
+        NotificationDetailView.as_view(),
     ),
     path(
         "tournaments/<int:tournament_id>/rounds/<int:round_id>/submissions/<int:submission_id>/evaluation",

@@ -505,163 +505,6 @@ class AttachmentListView(APIView):
 
 # ----------------------SUBMISSIONS----------------------
 
-
-class SubmissionListView(APIView):
-    permission_classes = [IsAuthenticated]
-
-    @extend_schema(
-        summary="Список сабмітів раунду", responses=SubmissionSerializer(many=True)
-    )
-    def get(self, request, tournament_id, round_id):
-        try:
-            round_obj = Round.objects.get(id=round_id, tournament_id=tournament_id)
-        except Round.DoesNotExist:
-            return Response(status=status.HTTP_404_NOT_FOUND)
-
-        check_and_update_round_deadlines(round_obj)
-
-        is_creator = round_obj.tournament.creator == request.user
-        is_jury = TournamentJury.objects.filter(
-            tournament_id=tournament_id, user=request.user
-        ).exists()
-
-        if is_creator or is_jury:
-            submissions = Submission.objects.filter(round_id=round_id)
-        else:
-            submissions = Submission.objects.filter(
-                round_id=round_id, team__teammember__user=request.user
-            )
-
-        serializer = SubmissionSerializer(submissions, many=True)
-        return Response(serializer.data)
-
-    @extend_schema(
-        summary="Створення сабміту",
-        request=SubmissionSerializer,
-        responses=SubmissionSerializer,
-    )
-    def post(self, request, tournament_id, round_id):
-        is_participant = (
-            TeamMember.objects.filter(
-                team__tournament_id=tournament_id, user=request.user
-            )
-            .exclude(team__status=Team.Status.DISQUALIFIED)
-            .first()
-        )
-
-        if not is_participant:
-            return Response(
-                {"error": "Ви не є учасником або команда дискваліфікована."},
-                status=status.HTTP_403_FORBIDDEN,
-            )
-
-        try:
-            round_obj = Round.objects.get(id=round_id, tournament_id=tournament_id)
-        except Round.DoesNotExist:
-            return Response(status=status.HTTP_404_NOT_FOUND)
-
-        if timezone.now() > round_obj.deadline:
-            return Response(
-                {"error": "Термін здачі пройшов."}, status=status.HTTP_400_BAD_REQUEST
-            )
-
-        if Submission.objects.filter(
-            round_id=round_id, team=is_participant.team
-        ).exists():
-            return Response(
-                {"error": "Сабміт вже створений."}, status=status.HTTP_400_BAD_REQUEST
-            )
-
-        serializer = SubmissionSerializer(data=request.data)
-        if serializer.is_valid():
-            serializer.save(
-                round=round_obj,
-                team=is_participant.team,
-                status=Submission.Status.DRAFT,
-            )
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-
-class SubmissionDetailView(APIView):
-    permission_classes = [IsAuthenticated]
-
-    def get_object(self, round_id, submission_id, user):
-        try:
-            sub = Submission.objects.get(id=submission_id, round_id=round_id)
-            if (
-                sub.round.tournament.creator == user
-                or TournamentJury.objects.filter(
-                    tournament=sub.round.tournament, user=user
-                ).exists()
-            ):
-                return sub
-            if sub.team.teammember_set.filter(user=user).exists():
-                return sub
-            return None
-        except Submission.DoesNotExist:
-            return None
-
-    @extend_schema(summary="Деталі сабміту", responses=SubmissionSerializer)
-    def get(self, request, tournament_id, round_id, submission_id):
-        sub = self.get_object(round_id, submission_id, request.user)
-        if not sub:
-            return Response(status=status.HTTP_404_NOT_FOUND)
-
-        check_and_update_round_deadlines(sub.round)
-        serializer = SubmissionSerializer(sub)
-        return Response(serializer.data)
-
-    @extend_schema(
-        summary="Редагування сабміту",
-        request=SubmissionSerializer,
-        responses=SubmissionSerializer,
-    )
-    def patch(self, request, tournament_id, round_id, submission_id):
-        sub = self.get_object(round_id, submission_id, request.user)
-        if not sub:
-            return Response(status=status.HTTP_404_NOT_FOUND)
-
-        if not sub.team.teammember_set.filter(user=request.user).exists():
-            return Response(
-                {"error": "Лише учасники команди можуть редагувати сабміт."},
-                status=status.HTTP_403_FORBIDDEN,
-            )
-
-        if sub.team.status == Team.Status.DISQUALIFIED:
-            return Response(
-                {"error": "Команда дискваліфікована."}, status=status.HTTP_403_FORBIDDEN
-            )
-
-        round_passed = timezone.now() > sub.round.deadline
-        new_status = request.data.get("status")
-
-        if round_passed:
-            return Response(
-                {"error": "Термін здачі пройшов."}, status=status.HTTP_400_BAD_REQUEST
-            )
-
-        if (
-            sub.status == Submission.Status.SUBMITTED
-            and new_status != Submission.Status.DRAFT
-        ):
-            return Response(
-                {"error": "Сабміт відправлено. Скасуйте (status=DR), щоб редагувати."},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-
-        serializer = SubmissionSerializer(sub, data=request.data, partial=True)
-        if serializer.is_valid():
-            if (
-                new_status == Submission.Status.SUBMITTED
-                and sub.status == Submission.Status.DRAFT
-            ):
-                sub.submitted_at = timezone.now()
-                serializer.save(submitted_at=timezone.now())
-            else:
-                serializer.save()
-
-
 # ----------------------EVALUATIONS----------------------
 
 
@@ -752,14 +595,19 @@ class EvaluationDetailView(APIView):
 
 class CriterionEvaluationDetailView(APIView):
     permission_classes = [IsAuthenticated]
+    serializer_class = CriterionEvaluationSerializer
 
     @extend_schema(
-        summary="Оновлення балу за критерій", request=CriterionEvaluationSerializer
+        summary="Оновлення балу за критерій",
+        request=CriterionEvaluationSerializer,
+        responses={200: CriterionEvaluationSerializer},
     )
     def patch(self, request, tournament_id, round_id, submission_id, crit_eval_id):
         try:
             ce = CriterionEvaluation.objects.get(
-                id=crit_eval_id, evaluation__submission_id=submission_id, evaluation__jury=request.user
+                id=crit_eval_id,
+                evaluation__submission_id=submission_id,
+                evaluation__jury=request.user,
             )
         except CriterionEvaluation.DoesNotExist:
             return Response(status=status.HTTP_404_NOT_FOUND)
@@ -779,12 +627,19 @@ class CriterionEvaluationDetailView(APIView):
 
 class RequirementEvaluationDetailView(APIView):
     permission_classes = [IsAuthenticated]
+    serializer_class = RequirementEvaluationSerializer
 
-    @extend_schema(summary="Оновлення вимоги", request=RequirementEvaluationSerializer)
+    @extend_schema(
+        summary="Оновлення вимоги",
+        request=RequirementEvaluationSerializer,
+        responses={200: RequirementEvaluationSerializer},
+    )
     def patch(self, request, tournament_id, round_id, submission_id, req_eval_id):
         try:
             re = RequirementEvaluation.objects.get(
-                id=req_eval_id, evaluation__submission_id=submission_id, evaluation__jury=request.user
+                id=req_eval_id,
+                evaluation__submission_id=submission_id,
+                evaluation__jury=request.user,
             )
         except RequirementEvaluation.DoesNotExist:
             return Response(status=status.HTTP_404_NOT_FOUND)
@@ -805,10 +660,16 @@ class RequirementEvaluationDetailView(APIView):
 
 class EvaluationCriterionListView(APIView):
     permission_classes = [IsAuthenticated]
+    serializer_class = CriterionEvaluationSerializer
 
-    @extend_schema(summary="Список оцінених критеріїв")
+    @extend_schema(
+        summary="Список оцінених критеріїв",
+        responses={200: CriterionEvaluationSerializer(many=True)},
+    )
     def get(self, request, tournament_id, round_id, submission_id):
-        criterions = CriterionEvaluation.objects.filter(evaluation__submission_id=submission_id)
+        criterions = CriterionEvaluation.objects.filter(
+            evaluation__submission_id=submission_id
+        )
         if not Tournament.objects.filter(
             id=tournament_id, creator=request.user
         ).exists():
@@ -819,13 +680,628 @@ class EvaluationCriterionListView(APIView):
 
 class EvaluationRequirementListView(APIView):
     permission_classes = [IsAuthenticated]
+    serializer_class = RequirementEvaluationSerializer
 
-    @extend_schema(summary="Список перевірених вимог")
+    @extend_schema(
+        summary="Список перевірених вимог",
+        responses={200: RequirementEvaluationSerializer(many=True)},
+    )
     def get(self, request, tournament_id, round_id, submission_id):
-        reqs = RequirementEvaluation.objects.filter(evaluation__submission_id=submission_id)
+        reqs = RequirementEvaluation.objects.filter(
+            evaluation__submission_id=submission_id
+        )
         if not Tournament.objects.filter(
             id=tournament_id, creator=request.user
         ).exists():
             reqs = reqs.filter(evaluation__jury=request.user)
         serializer = RequirementEvaluationSerializer(reqs, many=True)
         return Response(serializer.data)
+
+
+# ----------------------TEAMS----------------------
+
+
+class TeamListView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    @extend_schema(
+        summary="Список команд користувача",
+        description="Повертає список всіх команд, до яких зараз входить користувач (окрім архівованих/дискваліфікованих).",
+        responses={200: TeamSerializer(many=True)},
+    )
+    def get(self, request):
+        teams = Team.objects.filter(teammember__user=request.user).exclude(
+            status__in=[Team.Status.ARCHIVED, Team.Status.DISQUALIFIED]
+        )
+        serializer = TeamSerializer(teams, many=True)
+        return Response(serializer.data)
+
+    @extend_schema(
+        summary="Створення команди",
+        description="Дозволяє створити нову команду. Поточний користувач автоматично стає капітаном цієї команди.",
+        request=TeamSerializer,
+        responses={
+            201: TeamSerializer,
+            400: OpenApiResponse(description="Помилка валідації"),
+        },
+    )
+    def post(self, request):
+        serializer = TeamSerializer(data=request.data)
+        if serializer.is_valid():
+            team = serializer.save(status=Team.Status.REGISTRATED)
+            TeamMember.objects.create(team=team, user=request.user, is_captain=True)
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class TeamArchiveListView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    @extend_schema(
+        summary="Архів команд користувача",
+        description="Повертає список команд поточного користувача зі статусом ARCHIVED, або всі команди, де турнір вже завершився.",
+        responses={200: TeamSerializer(many=True)},
+    )
+    def get(self, request):
+        from django.db.models import Q
+
+        teams = (
+            Team.objects.filter(teammember__user=request.user)
+            .filter(
+                Q(status=Team.Status.ARCHIVED)
+                | Q(tournament__status=Tournament.Status.FINISHED)
+            )
+            .distinct()
+        )
+        serializer = TeamSerializer(teams, many=True)
+        return Response(serializer.data)
+
+
+class TeamDetailView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    @extend_schema(
+        summary="Деталі команди",
+        description="Отримання загальної інформації про обрану команду за її ID.",
+        responses={
+            200: TeamSerializer,
+            404: OpenApiResponse(description="Команда не знайдена"),
+        },
+    )
+    def get(self, request, team_id):
+        try:
+            team = Team.objects.get(id=team_id)
+        except Team.DoesNotExist:
+            return Response(status=status.HTTP_404_NOT_FOUND)
+        serializer = TeamSerializer(team)
+        return Response(serializer.data)
+
+
+class TeamParticipantListCreateView(APIView):
+    permission_classes = [IsAuthenticated]
+    serializer_class = TeamMemberSerializer
+
+    @extend_schema(
+        summary="Переглянути учасників команди",
+        description="Повертає список всіх поточних учасників команди за її ID.",
+        responses={
+            200: TeamMemberSerializer(many=True),
+            404: OpenApiResponse(description="Команда не знайдена"),
+        },
+    )
+    def get(self, request, team_id):
+        members = TeamMember.objects.filter(team_id=team_id)
+        serializer = TeamMemberSerializer(members, many=True)
+        return Response(serializer.data)
+
+    @extend_schema(
+        summary="Додати учасника (надіслати запрошення)",
+        description="Створює сповіщення типу TEAM_INVITE для вказаного користувача. Користувач не додається в команду доки не прийме запрошення.",
+        parameters=[
+            OpenApiParameter(
+                name="user_id",
+                type=int,
+                location=OpenApiParameter.QUERY,
+                description="ID користувача",
+            )
+        ],
+        responses={
+            201: OpenApiResponse(
+                description="Запрошення надіслано успішно",
+                response=dict,
+                examples=[
+                    OpenApiExample("Success", value={"status": "Запрошення надіслано."})
+                ],
+            ),
+            400: OpenApiResponse(
+                description="Не валідно (команда переповнена або реєстрація закрита)",
+                response=dict,
+                examples=[
+                    OpenApiExample(
+                        "Error",
+                        value={
+                            "error": "Максимальна кількість учасників вже досягнута."
+                        },
+                    )
+                ],
+            ),
+            403: OpenApiResponse(
+                description="Не капітан",
+                response=dict,
+                examples=[
+                    OpenApiExample("Forbidden", value={"error": "Ви не капітан."})
+                ],
+            ),
+            404: OpenApiResponse(description="Користувач або команда не знайдена"),
+        },
+    )
+    def post(self, request, team_id):
+        try:
+            team = Team.objects.get(id=team_id)
+        except Team.DoesNotExist:
+            return Response(status=status.HTTP_404_NOT_FOUND)
+
+        is_captain = TeamMember.objects.filter(
+            team=team, user=request.user, is_captain=True
+        ).exists()
+        if not is_captain:
+            return Response(
+                {"error": "Ви не капітан."}, status=status.HTTP_403_FORBIDDEN
+            )
+
+        check_tournament_deadlines(team.tournament)
+        if team.tournament.status != Tournament.Status.REGISTRATION:
+            return Response(
+                {"error": "Реєстрація не йде."}, status=status.HTTP_400_BAD_REQUEST
+            )
+
+        if team.teammember_set.count() >= team.tournament.max_team_size:
+            return Response(
+                {"error": "Максимальна кількість учасників вже досягнута."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        target_user_id = request.data.get("user_id") or request.query_params.get(
+            "user_id"
+        )
+        try:
+            target_user = User.objects.get(id=target_user_id)
+        except User.DoesNotExist:
+            return Response(
+                {"error": "Користувач не знайдений."}, status=status.HTTP_404_NOT_FOUND
+            )
+
+        from datetime import timedelta
+        from django.utils import timezone
+
+        from .models import Notification
+
+        Notification.objects.create(
+            user=target_user,
+            title=f"Запрошення в команду {team.name}",
+            message=f"Вас запросили в команду {team.name} на турнірі {team.tournament.title}.",
+            type=Notification.Type.TEAM_INVITE,
+            action_type=Notification.ActionType.YES_NO,
+            action_url=f"/tournaments/{team.tournament.id}?team_id={team.id}",
+            how_long_active=timezone.now() + timedelta(days=3),
+        )
+        return Response(
+            {"status": "Запрошення надіслано."}, status=status.HTTP_201_CREATED
+        )
+
+
+class TeamParticipantDetailView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    @extend_schema(
+        summary="Видалити/Покинути команду",
+        description="Видаляє учасника з команди. Якщо передати user_id='me' - поточний юзер покидає команду. Капітан може передати new_captain_id.",
+        parameters=[
+            OpenApiParameter(
+                name="user_id",
+                type=str,
+                location=OpenApiParameter.PATH,
+                description="ID учасника або рядок 'me'",
+            ),
+        ],
+        request=dict,
+        responses={
+            204: OpenApiResponse(
+                description="Учасника успішно видалено / Команду покинуто"
+            ),
+            400: OpenApiResponse(
+                description="Помилка бізнес логіки (наприклад, не передано ID нового капітана)",
+                response=dict,
+                examples=[
+                    OpenApiExample(
+                        "Error",
+                        value={"error": "Ви капітан. Передайте new_captain_id."},
+                    )
+                ],
+            ),
+            403: OpenApiResponse(
+                description="Недостатньо прав",
+                response=dict,
+                examples=[
+                    OpenApiExample("Forbidden", value={"error": "Ви не капітан."})
+                ],
+            ),
+            404: OpenApiResponse(description="Команду або учасника не знайдено"),
+        },
+    )
+    def delete(self, request, team_id, user_id):
+        try:
+            team = Team.objects.get(id=team_id)
+        except Team.DoesNotExist:
+            return Response(status=status.HTTP_404_NOT_FOUND)
+
+        check_tournament_deadlines(team.tournament)
+        reg_finished = team.tournament.status != Tournament.Status.REGISTRATION
+
+        try:
+            target_id = request.user.id if user_id == "me" else int(user_id)
+            target_member = TeamMember.objects.get(team=team, user_id=target_id)
+            initiator_member = TeamMember.objects.get(team=team, user=request.user)
+        except TeamMember.DoesNotExist:
+            return Response(
+                {"error": "Учасник не знайдений в цій команді."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        is_self_delete = target_member == initiator_member
+
+        if reg_finished:
+            current_count = team.teammember_set.count()
+            if current_count <= team.tournament.min_team_size:
+                if current_count == 1:
+                    team.delete()
+                    return Response(
+                        {"status": "Команду видалено."},
+                        status=status.HTTP_204_NO_CONTENT,
+                    )
+                else:
+                    return Response(
+                        {
+                            "error": "Неможливо видалити, реєстрація завершена і досягнуто мінімум учасників."
+                        },
+                        status=status.HTTP_400_BAD_REQUEST,
+                    )
+
+        if is_self_delete:
+            if initiator_member.is_captain:
+                if team.teammember_set.count() > 1:
+                    new_captain_id = request.data.get("new_captain_id")
+                    if not new_captain_id:
+                        return Response(
+                            {"error": "Ви капітан. Передайте new_captain_id."},
+                            status=status.HTTP_400_BAD_REQUEST,
+                        )
+                    try:
+                        new_cap = TeamMember.objects.get(
+                            team=team, user_id=new_captain_id
+                        )
+                        new_cap.is_captain = True
+                        new_cap.save()
+                    except TeamMember.DoesNotExist:
+                        return Response(
+                            {"error": "Новий капітан не знайдений у команді."},
+                            status=status.HTTP_400_BAD_REQUEST,
+                        )
+                target_member.delete()
+                if team.teammember_set.count() == 0:
+                    team.delete()
+            else:
+                target_member.delete()
+        else:
+            if not initiator_member.is_captain:
+                return Response(
+                    {"error": "Ви не капітан."}, status=status.HTTP_403_FORBIDDEN
+                )
+            if target_member.is_captain:
+                return Response(
+                    {"error": "Неможливо видалити капітана."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+            target_member.delete()
+
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class TeamCanCreateParticipantView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    @extend_schema(
+        summary="Чи можна додати учасника",
+        description="Перевіряє, чи поточний користувач є капітаном, чи відкрита реєстрація турніру та чи не досягнуто ліміт на розмір команди.",
+        responses={
+            200: OpenApiResponse(
+                description="Логічне значення (True/False)", response=bool
+            )
+        },
+    )
+    def get(self, request, team_id):
+        try:
+            team = Team.objects.get(id=team_id)
+        except Team.DoesNotExist:
+            return Response(status=status.HTTP_404_NOT_FOUND)
+
+        is_captain = TeamMember.objects.filter(
+            team=team, user=request.user, is_captain=True
+        ).exists()
+        can_add = (
+            is_captain
+            and team.tournament.status == Tournament.Status.REGISTRATION
+            and team.teammember_set.count() < team.tournament.max_team_size
+        )
+        return Response(can_add)
+
+
+# ----------------------TEAM SUBMISSIONS----------------------
+
+
+class TeamSubmitListView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    @extend_schema(
+        summary="Список сабмітів команди",
+        description="Отримує всі створені сабміти для вказаної команди.",
+        responses={
+            200: SubmissionSerializer(many=True),
+            403: OpenApiResponse(description="Користувач не є учасником цієї команди"),
+        },
+    )
+    def get(self, request, team_id):
+        if not TeamMember.objects.filter(team_id=team_id, user=request.user).exists():
+            return Response(status=status.HTTP_403_FORBIDDEN)
+        submissions = Submission.objects.filter(team_id=team_id)
+        serializer = SubmissionSerializer(submissions, many=True)
+        return Response(serializer.data)
+
+    @extend_schema(
+        summary="Створення сабміту",
+        description="Керує подачею рішення (сабмітом) на раунд. Тіло запиту повинно обов'язково містити round (ID раунду).",
+        request=SubmissionSerializer,
+        responses={
+            201: SubmissionSerializer,
+            400: OpenApiResponse(
+                description="Помилка валідації, дедлайн пройшов, або сабміт вже існує",
+                response=dict,
+                examples=[
+                    OpenApiExample("Error", value={"error": "Термін здачі пройшов."})
+                ],
+            ),
+            403: OpenApiResponse(description="Користувач не є учасником цієї команди"),
+            404: OpenApiResponse(description="Раунд не знайдено"),
+        },
+    )
+    def post(self, request, team_id):
+        if not TeamMember.objects.filter(team_id=team_id, user=request.user).exists():
+            return Response(status=status.HTTP_403_FORBIDDEN)
+        round_id = request.data.get("round")
+        if not round_id:
+            return Response(
+                {"error": "Вкажіть round"}, status=status.HTTP_400_BAD_REQUEST
+            )
+        try:
+            round_obj = Round.objects.get(id=round_id, tournament__team__id=team_id)
+        except Round.DoesNotExist:
+            return Response(status=status.HTTP_404_NOT_FOUND)
+
+        if timezone.now() > round_obj.deadline:
+            return Response(
+                {"error": "Термін здачі пройшов."}, status=status.HTTP_400_BAD_REQUEST
+            )
+
+        if Submission.objects.filter(round_id=round_id, team_id=team_id).exists():
+            return Response(
+                {"error": "Сабміт вже створений."}, status=status.HTTP_400_BAD_REQUEST
+            )
+
+        serializer = SubmissionSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save(
+                round=round_obj, team_id=team_id, status=Submission.Status.DRAFT
+            )
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class TeamSubmitDetailView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    @extend_schema(
+        summary="Редагування сабміту",
+        description="Часткове оновлення інформації про сабміт. Можна відправити сабміт (status=SU) або повернути до чернетки (status=DR).",
+        request=SubmissionSerializer,
+        responses={
+            200: SubmissionSerializer,
+            400: OpenApiResponse(
+                description="Дедлайн пройшов, або некоректна зміна статусу"
+            ),
+            403: OpenApiResponse(description="Користувач не учасник команди"),
+            404: OpenApiResponse(description="Сабміт не знайдено"),
+        },
+    )
+    def patch(self, request, team_id, submit_id):
+        if not TeamMember.objects.filter(team_id=team_id, user=request.user).exists():
+            return Response(status=status.HTTP_403_FORBIDDEN)
+        try:
+            sub = Submission.objects.get(id=submit_id, team_id=team_id)
+        except Submission.DoesNotExist:
+            return Response(status=status.HTTP_404_NOT_FOUND)
+
+        round_passed = timezone.now() > sub.round.deadline
+        new_status = request.data.get("status")
+
+        if round_passed:
+            return Response(
+                {"error": "Термін здачі пройшов."}, status=status.HTTP_400_BAD_REQUEST
+            )
+
+        if (
+            sub.status == Submission.Status.SUBMITTED
+            and new_status != Submission.Status.DRAFT
+        ):
+            return Response(
+                {"error": "Сабміт відправлено. Скасуйте (status=DR), щоб редагувати."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        serializer = SubmissionSerializer(sub, data=request.data, partial=True)
+        if serializer.is_valid():
+            if (
+                new_status == Submission.Status.SUBMITTED
+                and sub.status == Submission.Status.DRAFT
+            ):
+                sub.submitted_at = timezone.now()
+                serializer.save(submitted_at=timezone.now())
+            else:
+                serializer.save()
+            return Response(serializer.data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+# ----------------------NOTIFICATIONS----------------------
+
+
+class NotificationListView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    @extend_schema(
+        summary="Список поточних сповіщень",
+        description="Повертає список всіх актуальних сповіщень користувача. Може бути відфільтровано за статусом (наприклад, UR - Unread, RD - Read).",
+        parameters=[
+            OpenApiParameter(
+                name="status",
+                type=str,
+                location=OpenApiParameter.QUERY,
+                description="Кома-розділені статуси: UR, RD, AR",
+            )
+        ],
+        responses={200: NotificationSerializer(many=True)},
+    )
+    def get(self, request):
+        from .models import Notification
+
+        status_param = request.query_params.get("status")
+        nots = Notification.objects.filter(user=request.user)
+        if status_param:
+            statuses = status_param.split(",")
+            nots = nots.filter(status__in=statuses)
+        serializer = NotificationSerializer(nots, many=True)
+        return Response(serializer.data)
+
+
+class NotificationArchiveListView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    @extend_schema(
+        summary="Архів сповіщень",
+        description="Повертає всі сповіщення користувача, які мають статус ARCHIVED (AR).",
+        responses={200: NotificationSerializer(many=True)},
+    )
+    def get(self, request):
+        from .models import Notification
+
+        nots = Notification.objects.filter(
+            user=request.user, status=Notification.Status.ARCHIVED
+        )
+        serializer = NotificationSerializer(nots, many=True)
+        return Response(serializer.data)
+
+
+class NotificationDetailView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    @extend_schema(
+        summary="Дії зі сповіщеннями (read, archive, accept, reject)",
+        description="Єдиний ендпоінт для взаємодії зі сповіщеннями через action: 'read', 'archive', 'accept', 'reject'. Якщо це TEAM_INVITE, 'accept' автоматично додасть учасника в команду.",
+        request=dict,
+        responses={
+            200: OpenApiResponse(
+                description="Успішно оновлено",
+                response=dict,
+                examples=[OpenApiExample("Success", value={"status": "AR"})],
+            ),
+            400: OpenApiResponse(
+                description="Логічна помилка (запрошення минуло, команда повна, юзер вже в турнірі)",
+                response=dict,
+                examples=[
+                    OpenApiExample("Error", value={"error": "Запрошення минуло."})
+                ],
+            ),
+            404: OpenApiResponse(description="Сповіщення не знайдене"),
+        },
+    )
+    def patch(self, request, notification_id):
+        from django.utils import timezone
+        from .models import Notification
+
+        try:
+            notif = Notification.objects.get(id=notification_id, user=request.user)
+        except Notification.DoesNotExist:
+            return Response(status=status.HTTP_404_NOT_FOUND)
+
+        action = request.data.get("action")
+        if action == "read":
+            notif.status = Notification.Status.READ
+            notif.save(update_fields=["status"])
+        elif action == "archive":
+            notif.status = Notification.Status.ARCHIVED
+            notif.save(update_fields=["status"])
+        elif action == "accept" and notif.type == Notification.Type.TEAM_INVITE:
+            if timezone.now() > notif.how_long_active:
+                notif.status = Notification.Status.ARCHIVED
+                notif.save(update_fields=["status"])
+                return Response(
+                    {"error": "Запрошення минуло."}, status=status.HTTP_400_BAD_REQUEST
+                )
+
+            import urllib.parse as urlparse
+
+            parsed = urlparse.urlparse(notif.action_url)
+            query = urlparse.parse_qs(parsed.query)
+            team_id = query.get("team_id", [None])[0]
+
+            if not team_id:
+                return Response(
+                    {"error": "Пошкоджене запрошення (немає team_id)"},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+            try:
+                team = Team.objects.get(id=team_id)
+            except Team.DoesNotExist:
+                return Response(
+                    {"error": "Команда не існує."}, status=status.HTTP_400_BAD_REQUEST
+                )
+
+            if team.teammember_set.count() >= team.tournament.max_team_size:
+                return Response(
+                    {"error": "Команда вже повна."}, status=status.HTTP_400_BAD_REQUEST
+                )
+
+            if team.tournament.status != Tournament.Status.REGISTRATION:
+                return Response(
+                    {"error": "Реєстрація закрита."}, status=status.HTTP_400_BAD_REQUEST
+                )
+
+            if (
+                TeamMember.objects.filter(
+                    team__tournament=team.tournament, user=request.user
+                )
+                .exclude(team__status=Team.Status.DISQUALIFIED)
+                .exists()
+            ):
+                return Response(
+                    {"error": "Ви вже є в цьому турнірі."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
+            TeamMember.objects.create(team=team, user=request.user)
+            notif.status = Notification.Status.ARCHIVED
+            notif.save(update_fields=["status"])
+        elif action == "reject":
+            notif.status = Notification.Status.ARCHIVED
+            notif.save(update_fields=["status"])
+
+        return Response({"status": getattr(notif, "status", None)})

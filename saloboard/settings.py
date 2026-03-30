@@ -158,4 +158,11 @@ SPECTACULAR_SETTINGS = {
     "TITLE": "My API",
     "DESCRIPTION": "Документація API",
     "VERSION": "1.0.0",
+    "ENUM_NAME_OVERRIDES": {
+        "TournamentStatusEnum": "salocore.models.Tournament.Status",
+        "TeamStatusEnum": "salocore.models.Team.Status",
+        "NotificationStatusEnum": "salocore.models.Notification.Status",
+        "SubmissionStatusEnum": "salocore.models.Submission.Status",
+        "EvaluationStatusEnum": "salocore.models.Evaluation.Status",
+    },
 }
