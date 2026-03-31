@@ -125,4 +125,67 @@ urlpatterns = [
         UserProfileView.as_view(),
         name="user-profile",
     ),
+    path("admin/tournaments", AdminTournamentListView.as_view()),
+    path("admin/tournaments/<int:tournament_id>", AdminTournamentDetailView.as_view()),
+    path(
+        "admin/tournaments/<int:tournament_id>/start",
+        AdminTournamentStartView.as_view(),
+    ),
+    path(
+        "admin/tournaments/<int:tournament_id>/jury", AdminTournamentJuryView.as_view()
+    ),
+    path(
+        "admin/tournaments/<int:tournament_id>/admin",
+        AdminTournamentAdminsView.as_view(),
+    ),
+    path("admin/tournaments/<int:tournament_id>/rounds", AdminRoundListView.as_view()),
+    path(
+        "admin/tournaments/<int:tournament_id>/rounds/<int:round_id>",
+        AdminRoundDetailView.as_view(),
+    ),
+    path(
+        "admin/tournaments/<int:tournament_id>/rounds/<int:round_id>/start",
+        AdminRoundStartView.as_view(),
+    ),
+    path(
+        "admin/tournaments/<int:tournament_id>/rounds/<int:round_id>/attachment",
+        AdminRoundAttachmentView.as_view(),
+    ),
+    path(
+        "admin/tournaments/<int:tournament_id>/rounds/<int:round_id>/requirement",
+        AdminRoundRequirementView.as_view(),
+    ),
+    path(
+        "admin/tournaments/<int:tournament_id>/rounds/<int:round_id>/criterion",
+        AdminRoundCriterionView.as_view(),
+    ),
+    path("admin/tournaments/<int:tournament_id>/teams", AdminTeamListView.as_view()),
+    path(
+        "admin/tournaments/<int:tournament_id>/teams/<int:team_id>/disqualify",
+        AdminTeamDisqualifyView.as_view(),
+    ),
+    path(
+        "admin/tournaments/<int:tournament_id>/teams/<int:team_id>/participants",
+        AdminParticipantListView.as_view(),
+    ),
+    path(
+        "admin/tournaments/<int:tournament_id>/teams/<int:team_id>/participants/<int:user_id>",
+        AdminParticipantDetailView.as_view(),
+    ),
+    path(
+        "admin/tournaments/<int:tournament_id>/rounds/<int:round_id>/submit",
+        AdminSubmissionListView.as_view(),
+    ),
+    path(
+        "admin/tournaments/<int:tournament_id>/rounds/<int:round_id>/submit/<int:submission_id>",
+        AdminSubmissionDetailView.as_view(),
+    ),
+    path(
+        "admin/tournaments/<int:tournament_id>/rounds/<int:round_id>/evaluation",
+        AdminEvaluationListView.as_view(),
+    ),
+    path(
+        "admin/tournaments/<int:tournament_id>/rounds/<int:round_id>/evaluation/<int:evaluation_id>",
+        AdminEvaluationDetailView.as_view(),
+    ),
 ]

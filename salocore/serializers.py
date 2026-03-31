@@ -124,6 +124,20 @@ class TournamentDetailSerializer(serializers.ModelSerializer):
             "ended_at",
         ]
 
+class TournamentJurySerializer(serializers.ModelSerializer):
+    username = serializers.CharField(source='user.username', read_only=True)
+    class Meta:
+        model = TournamentJury
+        fields = ['id', 'user', 'username', 'tournament']
+        read_only_fields = ['id', 'user', 'username', 'tournament']
+
+class TournamentAdminSerializer(serializers.ModelSerializer):
+    username = serializers.CharField(source='user.username', read_only=True)
+    class Meta:
+        model = TournamentAdmin
+        fields = ['id', 'user', 'username', 'tournament']
+        read_only_fields = ['id', 'user', 'username', 'tournament']
+
 
 class TeamSerializer(serializers.ModelSerializer):
     class Meta:

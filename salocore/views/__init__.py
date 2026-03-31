@@ -7,3 +7,8 @@ from .team_member import *
 from .submission import *
 from .notification import *
 from .user import *
+from .admin_tournament import *
+from .admin_round import *
+from .admin_team import *
+from .admin_submit import *
+from .admin_evaluation import *
