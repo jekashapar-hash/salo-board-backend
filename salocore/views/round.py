@@ -18,8 +18,6 @@ from ..serializers import (
 )
 from ..utils import check_and_update_round_deadlines, check_tournament_deadlines
 
-# ----------------------ROUNDS----------------------
-
 
 class RoundListView(APIView):
     permission_classes = [IsAuthenticated]

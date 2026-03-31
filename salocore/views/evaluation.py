@@ -20,8 +20,6 @@ from ..serializers import (
     RequirementEvaluationSerializer,
 )
 
-# ----------------------EVALUATIONS----------------------
-
 
 class EvaluationDetailView(APIView):
     permission_classes = [IsAuthenticated]

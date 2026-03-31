@@ -93,7 +93,15 @@ class TeamMemberSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = TeamMember
-        fields = ["id", "team", "user", "user_email", "user_username", "is_captain", "created_at"]
+        fields = [
+            "id",
+            "team",
+            "user",
+            "user_email",
+            "user_username",
+            "is_captain",
+            "created_at",
+        ]
         read_only_fields = ("id", "created_at", "team", "user", "is_captain")
 
 

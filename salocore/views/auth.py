@@ -18,8 +18,6 @@ from ..serializers import (
     LogoutResponseSerializer,
 )
 
-# -------------------------- Auth ------------------------------------------
-
 
 class CustomTokenObtainPairView(TokenObtainPairView):
     serializer_class = CustomTokenObtainPairSerializer

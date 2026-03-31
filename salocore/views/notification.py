@@ -12,8 +12,6 @@ from django.utils import timezone
 from ..models import Notification, Team, TeamMember, Tournament
 from ..serializers import NotificationSerializer
 
-# ----------------------NOTIFICATIONS----------------------
-
 
 class NotificationListView(APIView):
     permission_classes = [IsAuthenticated]

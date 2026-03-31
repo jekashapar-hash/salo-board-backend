@@ -7,8 +7,6 @@ from django.utils import timezone
 from ..models import TeamMember, Submission, Round
 from ..serializers import SubmissionSerializer
 
-# ----------------------TEAM SUBMISSIONS----------------------
-
 
 class TeamSubmitListView(APIView):
     permission_classes = [IsAuthenticated]

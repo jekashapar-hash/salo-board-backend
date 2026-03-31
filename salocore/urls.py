@@ -15,9 +15,9 @@ urlpatterns = [
     path("schema", SpectacularAPIView.as_view(), name="schema"),
     path("docs", SpectacularSwaggerView.as_view(url_name="schema")),
     path("redoc", SpectacularRedocView.as_view(url_name="schema")),
-    path("tournaments/", TournamentListView.as_view(), name="tournament-list"),
+    path("tournaments", TournamentListView.as_view(), name="tournament-list"),
     path(
-        "tournaments/<int:tournament_id>/",
+        "tournaments/<int:tournament_id>",
         TournamentDetailView.as_view(),
         name="tournament-detail",
     ),

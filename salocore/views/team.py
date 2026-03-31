@@ -7,8 +7,6 @@ from django.db.models import Q
 from ..models import Team, TeamMember, Tournament
 from ..serializers import TeamSerializer
 
-# ----------------------TEAMS----------------------
-
 
 class TeamListView(APIView):
     permission_classes = [IsAuthenticated]

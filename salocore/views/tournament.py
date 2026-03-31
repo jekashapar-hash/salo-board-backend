@@ -18,8 +18,6 @@ from ..serializers import (
     LeaderboardItemSerializer,
 )
 
-# -------------------------- Tournament ------------------------------------
-
 
 class TournamentListView(APIView):
     permission_classes = [AllowAny]
