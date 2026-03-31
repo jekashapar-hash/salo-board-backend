@@ -120,4 +120,9 @@ urlpatterns = [
         "tournaments/<int:tournament_id>/rounds/<int:round_id>/submissions/<int:submission_id>/evaluation/requirement-evaluation/<int:req_eval_id>",
         RequirementEvaluationDetailView.as_view(),
     ),
+    path(
+        "user",
+        UserProfileView.as_view(),
+        name="user-profile",
+    ),
 ]

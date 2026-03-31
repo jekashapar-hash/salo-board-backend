@@ -6,3 +6,4 @@ from .team import *
 from .team_member import *
 from .submission import *
 from .notification import *
+from .user import *

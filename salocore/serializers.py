@@ -45,6 +45,51 @@ class LogoutResponseSerializer(serializers.Serializer):
 # ----------------------------------------------
 
 
+class UserProfileSerializer(serializers.Serializer):
+    # User fields
+    first_name = serializers.CharField(max_length=150, required=False)
+    last_name = serializers.CharField(max_length=150, required=False)
+
+    # UserProfile fields
+    city = serializers.CharField(max_length=100, required=False, allow_blank=True)
+    organization = serializers.CharField(max_length=100, required=False, allow_blank=True)
+    telegram = serializers.CharField(max_length=100, required=False, allow_blank=True)
+    discord = serializers.CharField(max_length=100, required=False, allow_blank=True)
+
+    def to_representation(self, instance):
+        """instance is a User object"""
+        profile = instance.userprofile
+        return {
+            "firstName": instance.first_name,
+            "lastName": instance.last_name,
+            "city": profile.city,
+            "organization": profile.organization,
+            "telegram": profile.telegram,
+            "discord": profile.discord,
+        }
+
+    def update(self, instance, validated_data):
+        # Update User fields
+        user_fields = ("first_name", "last_name")
+        profile_fields = ("city", "organization", "telegram", "discord")
+
+        user_updated = False
+        for field in user_fields:
+            if field in validated_data:
+                setattr(instance, field, validated_data[field])
+                user_updated = True
+        if user_updated:
+            instance.save(update_fields=[f for f in user_fields if f in validated_data])
+
+        profile = instance.userprofile
+        for field in profile_fields:
+            if field in validated_data:
+                setattr(profile, field, validated_data[field])
+        profile.save()
+
+        return instance
+
+
 class TournamentSerializer(serializers.ModelSerializer):
     class Meta:
         model = Tournament
