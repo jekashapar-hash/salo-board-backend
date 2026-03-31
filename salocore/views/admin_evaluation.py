@@ -18,7 +18,7 @@ class AdminEvaluationListView(APIView):
     def get(self, request, tournament_id, round_id):
         evaluations = Evaluation.objects.filter(
             submission__round_id=round_id,
-            submission__round__tournament_id=tournament_id
+            submission__round__tournament_id=tournament_id,
         ).order_by("submission__team__name")
 
         serializer = EvaluationSerializer(evaluations, many=True)
@@ -38,7 +38,7 @@ class AdminEvaluationDetailView(APIView):
             Evaluation,
             id=evaluation_id,
             submission__round_id=round_id,
-            submission__round__tournament_id=tournament_id
+            submission__round__tournament_id=tournament_id,
         )
 
         serializer = EvaluationSerializer(evaluation)
