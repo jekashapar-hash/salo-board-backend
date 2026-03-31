@@ -34,13 +34,13 @@ class TeamParticipantListCreateView(APIView):
 
     @extend_schema(
         summary="Додати учасника (надіслати запрошення)",
-        description="Створює сповіщення типу TEAM_INVITE для вказаного користувача. Користувач не додається в команду доки не прийме запрошення.",
+        description="Створює сповіщення типу TEAM_INVITE для вказаного користувача за його invite_code. Користувач не додається в команду доки не прийме запрошення.",
         parameters=[
             OpenApiParameter(
-                name="user_id",
-                type=int,
+                name="invite_code",
+                type=str,
                 location=OpenApiParameter.QUERY,
-                description="ID користувача",
+                description="Інвайт-код користувача (з профілю)",
             )
         ],
         responses={
@@ -99,14 +99,20 @@ class TeamParticipantListCreateView(APIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        target_user_id = request.data.get("user_id") or request.query_params.get(
-            "user_id"
+        invite_code = request.data.get("invite_code") or request.query_params.get(
+            "invite_code"
         )
+        if not invite_code:
+            return Response(
+                {"error": "Передайте invite_code користувача."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
         try:
-            target_user = User.objects.get(id=target_user_id)
+            target_user = User.objects.get(invite_code=invite_code)
         except User.DoesNotExist:
             return Response(
-                {"error": "Користувач не знайдений."}, status=status.HTTP_404_NOT_FOUND
+                {"error": "Користувач з таким invite_code не знайдений."},
+                status=status.HTTP_404_NOT_FOUND,
             )
 
         Notification.objects.create(
