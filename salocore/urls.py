@@ -15,9 +15,9 @@ urlpatterns = [
     path("schema", SpectacularAPIView.as_view(), name="schema"),
     path("docs", SpectacularSwaggerView.as_view(url_name="schema")),
     path("redoc", SpectacularRedocView.as_view(url_name="schema")),
-    path("tournaments/", TournamentListView.as_view(), name="tournament-list"),
+    path("tournaments", TournamentListView.as_view(), name="tournament-list"),
     path(
-        "tournaments/<int:tournament_id>/",
+        "tournaments/<int:tournament_id>",
         TournamentDetailView.as_view(),
         name="tournament-detail",
     ),
@@ -57,14 +57,48 @@ urlpatterns = [
         name="tournament-round-attachments",
     ),
     path(
-        "tournaments/<int:tournament_id>/rounds/<int:round_id>/submissions",
-        SubmissionListView.as_view(),
-        name="tournament-round-submissions",
+        "teams",
+        TeamListView.as_view(),
     ),
     path(
-        "tournaments/<int:tournament_id>/rounds/<int:round_id>/submissions/<int:submission_id>",
-        SubmissionDetailView.as_view(),
-        name="tournament-round-submission-detail",
+        "teams/archive",
+        TeamArchiveListView.as_view(),
+    ),
+    path(
+        "teams/<int:team_id>",
+        TeamDetailView.as_view(),
+    ),
+    path(
+        "teams/<int:team_id>/participant",
+        TeamParticipantListCreateView.as_view(),
+    ),
+    path(
+        "teams/<int:team_id>/participant/<str:user_id>",
+        TeamParticipantDetailView.as_view(),
+    ),
+    path(
+        "teams/<int:team_id>/participant/can-add",
+        TeamCanCreateParticipantView.as_view(),
+    ),
+    path(
+        "teams/<int:team_id>/submit",
+        TeamSubmitListView.as_view(),
+    ),
+    path(
+        "teams/<int:team_id>/submit/<int:submit_id>",
+        TeamSubmitDetailView.as_view(),
+    ),
+    path(
+        "notifications",
+        NotificationListView.as_view(),
+    ),
+    path(
+        "notifications/archive",
+        NotificationArchiveListView.as_view(),
+    ),
+    path(
+        "notifications/<int:notification_id>",
+        NotificationDetailView.as_view(),
     ),
     path(
         "tournaments/<int:tournament_id>/rounds/<int:round_id>/submissions/<int:submission_id>/evaluation",
@@ -86,4 +120,78 @@ urlpatterns = [
         "tournaments/<int:tournament_id>/rounds/<int:round_id>/submissions/<int:submission_id>/evaluation/requirement-evaluation/<int:req_eval_id>",
         RequirementEvaluationDetailView.as_view(),
     ),
+    path(
+        "user",
+        UserProfileView.as_view(),
+        name="user-profile",
+    ),
+    path("chats", ChatListCreateView.as_view()),
+    path("chats/<int:chat_id>", ChatDetailView.as_view()),
+    path("chats/<int:chat_id>/messages", ChatMessageListView.as_view()),
+    path("admin/tournaments", AdminTournamentListView.as_view()),
+    path("admin/tournaments/<int:tournament_id>", AdminTournamentDetailView.as_view()),
+    path(
+        "admin/tournaments/<int:tournament_id>/start",
+        AdminTournamentStartView.as_view(),
+    ),
+    path(
+        "admin/tournaments/<int:tournament_id>/jury", AdminTournamentJuryView.as_view()
+    ),
+    path(
+        "admin/tournaments/<int:tournament_id>/admin",
+        AdminTournamentAdminsView.as_view(),
+    ),
+    path("admin/tournaments/<int:tournament_id>/rounds", AdminRoundListView.as_view()),
+    path(
+        "admin/tournaments/<int:tournament_id>/rounds/<int:round_id>",
+        AdminRoundDetailView.as_view(),
+    ),
+    path(
+        "admin/tournaments/<int:tournament_id>/rounds/<int:round_id>/start",
+        AdminRoundStartView.as_view(),
+    ),
+    path(
+        "admin/tournaments/<int:tournament_id>/rounds/<int:round_id>/attachment",
+        AdminRoundAttachmentView.as_view(),
+    ),
+    path(
+        "admin/tournaments/<int:tournament_id>/rounds/<int:round_id>/requirement",
+        AdminRoundRequirementView.as_view(),
+    ),
+    path(
+        "admin/tournaments/<int:tournament_id>/rounds/<int:round_id>/criterion",
+        AdminRoundCriterionView.as_view(),
+    ),
+    path("admin/tournaments/<int:tournament_id>/teams", AdminTeamListView.as_view()),
+    path(
+        "admin/tournaments/<int:tournament_id>/teams/<int:team_id>/disqualify",
+        AdminTeamDisqualifyView.as_view(),
+    ),
+    path(
+        "admin/tournaments/<int:tournament_id>/teams/<int:team_id>/participants",
+        AdminParticipantListView.as_view(),
+    ),
+    path(
+        "admin/tournaments/<int:tournament_id>/teams/<int:team_id>/participants/<int:user_id>",
+        AdminParticipantDetailView.as_view(),
+    ),
+    path(
+        "admin/tournaments/<int:tournament_id>/rounds/<int:round_id>/submit",
+        AdminSubmissionListView.as_view(),
+    ),
+    path(
+        "admin/tournaments/<int:tournament_id>/rounds/<int:round_id>/submit/<int:submission_id>",
+        AdminSubmissionDetailView.as_view(),
+    ),
+    path(
+        "admin/tournaments/<int:tournament_id>/rounds/<int:round_id>/evaluation",
+        AdminEvaluationListView.as_view(),
+    ),
+    path(
+        "admin/tournaments/<int:tournament_id>/rounds/<int:round_id>/evaluation/<int:evaluation_id>",
+        AdminEvaluationDetailView.as_view(),
+    ),
+    path("admin/chats", AdminChatListView.as_view()),
+    path("admin/chats/<int:chat_id>", AdminChatDetailView.as_view()),
+    path("admin/chats/<int:chat_id>/messages", AdminChatMessageListView.as_view()),
 ]
