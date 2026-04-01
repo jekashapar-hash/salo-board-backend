@@ -12,3 +12,4 @@ from .admin_round import *
 from .admin_team import *
 from .admin_submit import *
 from .admin_evaluation import *
+from .chat import *

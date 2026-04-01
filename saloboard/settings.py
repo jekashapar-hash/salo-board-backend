@@ -41,6 +41,7 @@ CSRF_TRUSTED_ORIGINS = os.getenv("CSRF_TRUSTED_ORIGINS", "").split(",")
 # Application definition
 
 INSTALLED_APPS = [
+    "daphne",
     "jazzmin",
     "django.contrib.admin",
     "django.contrib.auth",
@@ -53,6 +54,7 @@ INSTALLED_APPS = [
     "drf_spectacular",
     "rest_framework_simplejwt",
     "rest_framework_simplejwt.token_blacklist",
+    "channels",
     "salocore",
 ]
 
@@ -179,3 +181,18 @@ SPECTACULAR_SETTINGS = {
         "drf_spectacular.contrib.djangorestframework_camel_case.camelize_serializer_fields",
     ],
 }
+
+ASGI_APPLICATION = "saloboard.asgi.application"
+
+REDIS_URL = os.getenv("REDIS_URL")
+if REDIS_URL:
+    CHANNEL_LAYERS = {
+        "default": {
+            "BACKEND": "channels_redis.core.RedisChannelLayer",
+            "CONFIG": {"hosts": [REDIS_URL]},
+        }
+    }
+else:
+    CHANNEL_LAYERS = {
+        "default": {"BACKEND": "channels.layers.InMemoryChannelLayer"}
+    }

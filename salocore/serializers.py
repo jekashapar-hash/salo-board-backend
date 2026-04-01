@@ -270,3 +270,21 @@ class RequirementEvaluationSerializer(serializers.ModelSerializer):
         model = RequirementEvaluation
         fields = "__all__"
         read_only_fields = ("id", "evaluation", "requirement")
+
+
+# -------------------------- Chat ------------------------------------------
+
+class ChatSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Chat
+        fields = ["id", "user", "is_solved", "created_at"]
+        read_only_fields = ["id", "user", "created_at"]
+
+
+class MessageSerializer(serializers.ModelSerializer):
+    username = serializers.CharField(source="user.username", read_only=True)
+
+    class Meta:
+        model = Message
+        fields = ["id", "chat", "user", "username", "text", "created_at"]
+        read_only_fields = ["id", "chat", "user", "username", "created_at"]

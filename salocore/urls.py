@@ -125,6 +125,9 @@ urlpatterns = [
         UserProfileView.as_view(),
         name="user-profile",
     ),
+    path("chats", ChatListCreateView.as_view()),
+    path("chats/<int:chat_id>", ChatDetailView.as_view()),
+    path("chats/<int:chat_id>/messages", ChatMessageListView.as_view()),
     path("admin/tournaments", AdminTournamentListView.as_view()),
     path("admin/tournaments/<int:tournament_id>", AdminTournamentDetailView.as_view()),
     path(
@@ -188,4 +191,7 @@ urlpatterns = [
         "admin/tournaments/<int:tournament_id>/rounds/<int:round_id>/evaluation/<int:evaluation_id>",
         AdminEvaluationDetailView.as_view(),
     ),
+    path("admin/chats", AdminChatListView.as_view()),
+    path("admin/chats/<int:chat_id>", AdminChatDetailView.as_view()),
+    path("admin/chats/<int:chat_id>/messages", AdminChatMessageListView.as_view()),
 ]
