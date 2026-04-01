@@ -13,5 +13,6 @@ dependencies = [
     "drf-spectacular>=0.29.0",
     "python-dotenv>=1.0.0",
     "channels>=4.0.0",
-    "channels_redis>=4.0.0",
+    "channels-redis>=4.0.0",
+    "daphne>=4.2.1",
 ]
