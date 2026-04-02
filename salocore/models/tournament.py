@@ -1,4 +1,5 @@
 from django.db import models
+from django.utils import timezone
 from saloboard import settings
 
 
@@ -26,7 +27,7 @@ class Tournament(models.Model):
     is_team_visible = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
-    ended_at = models.DateTimeField(null=True, blank=True)
+    ended_at = models.DateTimeField()
 
     def __str__(self):
         return self.title
