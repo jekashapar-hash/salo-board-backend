@@ -2,7 +2,7 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
-from drf_spectacular.utils import extend_schema, OpenApiResponse
+from drf_spectacular.utils import extend_schema, OpenApiResponse, OpenApiExample
 
 from ..serializers import UserProfileSerializer, UserNameSerializer
 
@@ -44,7 +44,19 @@ class UserNameView(APIView):
 
     @extend_schema(
         summary="Отримати ім'я та прізвище користувача",
-        responses={200: UserNameSerializer},
+        description="Повертає скорочену версію профілю: тільки ім'я та прізвище поточного користувача.",
+        responses={
+            200: UserNameSerializer,
+            401: OpenApiResponse(description="Потрібна авторизація (JWT)"),
+        },
+        examples=[
+            OpenApiExample(
+                "Приклад відповіді",
+                value={"firstName": "Іван", "lastName": "Богун"},
+                response_only=True,
+            )
+        ],
+        tags=["User"],
     )
     def get(self, request):
         serializer = UserNameSerializer(request.user)

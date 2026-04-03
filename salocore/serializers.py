@@ -91,6 +91,9 @@ class UserProfileSerializer(serializers.Serializer):
 
 
 class UserNameSerializer(serializers.Serializer):
+    firstName = serializers.CharField(read_only=True, help_text="Ім'я користувача")
+    lastName = serializers.CharField(read_only=True, help_text="Прізвище користувача")
+
     def to_representation(self, instance):
         return {
             "firstName": instance.first_name,
