@@ -90,6 +90,14 @@ class UserProfileSerializer(serializers.Serializer):
         return instance
 
 
+class UserNameSerializer(serializers.Serializer):
+    def to_representation(self, instance):
+        return {
+            "firstName": instance.first_name,
+            "lastName": instance.last_name,
+        }
+
+
 class TournamentSerializer(serializers.ModelSerializer):
     class Meta:
         model = Tournament

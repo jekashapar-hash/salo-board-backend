@@ -4,7 +4,7 @@ from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
 from drf_spectacular.utils import extend_schema, OpenApiResponse
 
-from ..serializers import UserProfileSerializer
+from ..serializers import UserProfileSerializer, UserNameSerializer
 
 
 class UserProfileView(APIView):
@@ -37,3 +37,15 @@ class UserProfileView(APIView):
         # Return fresh representation
         out = UserProfileSerializer(request.user)
         return Response(out.data, status=status.HTTP_200_OK)
+
+
+class UserNameView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    @extend_schema(
+        summary="Отримати ім'я та прізвище користувача",
+        responses={200: UserNameSerializer},
+    )
+    def get(self, request):
+        serializer = UserNameSerializer(request.user)
+        return Response(serializer.data, status=status.HTTP_200_OK)
