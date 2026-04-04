@@ -13,6 +13,7 @@ from ..serializers import ChatSerializer, MessageSerializer
 
 class ChatListCreateView(APIView):
     permission_classes = [IsAuthenticated]
+    serializer_class = ChatSerializer
 
     @extend_schema(
         summary="Список чатів (Користувач)",
@@ -42,6 +43,7 @@ class ChatListCreateView(APIView):
     @extend_schema(
         summary="Створити чат (Користувач)",
         description="Створення нового чату. Автор автоматично стає власником.",
+        request=None,
         responses={201: ChatSerializer},
     )
     def post(self, request):
@@ -54,6 +56,7 @@ class ChatListCreateView(APIView):
 
 class ChatDetailView(APIView):
     permission_classes = [IsAuthenticated]
+    serializer_class = ChatSerializer
 
     @extend_schema(
         summary="Закрити/відкрити чат (Користувач)",
@@ -74,6 +77,7 @@ class ChatDetailView(APIView):
 
 class ChatMessageListView(APIView):
     permission_classes = [IsAuthenticated]
+    serializer_class = MessageSerializer
 
     @extend_schema(
         summary="Історія повідомлень (Користувач)",
@@ -92,6 +96,7 @@ class ChatMessageListView(APIView):
 
 class AdminChatListView(APIView):
     permission_classes = [IsAdminUser]
+    serializer_class = ChatSerializer
 
     @extend_schema(
         summary="Список чатів (Адмін)",
@@ -122,6 +127,7 @@ class AdminChatListView(APIView):
 
 class AdminChatDetailView(APIView):
     permission_classes = [IsAdminUser]
+    serializer_class = ChatSerializer
 
     @extend_schema(
         summary="Закрити/відкрити чат (Адмін)",
@@ -142,6 +148,7 @@ class AdminChatDetailView(APIView):
 
 class AdminChatMessageListView(APIView):
     permission_classes = [IsAdminUser]
+    serializer_class = MessageSerializer
 
     @extend_schema(
         summary="Історія повідомлень (Адмін)",

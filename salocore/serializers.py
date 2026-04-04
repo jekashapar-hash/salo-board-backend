@@ -47,8 +47,10 @@ class LogoutResponseSerializer(serializers.Serializer):
 
 class UserProfileSerializer(serializers.Serializer):
     # User fields
+    email = serializers.EmailField(read_only=True)
     first_name = serializers.CharField(max_length=150, required=False)
     last_name = serializers.CharField(max_length=150, required=False)
+    date_joined = serializers.DateTimeField(read_only=True)
 
     # UserProfile fields
     city = serializers.CharField(max_length=100, required=False, allow_blank=True)
@@ -60,8 +62,10 @@ class UserProfileSerializer(serializers.Serializer):
         """instance is a User object"""
         profile = instance.userprofile
         return {
+            "email": instance.email,
             "firstName": instance.first_name,
             "lastName": instance.last_name,
+            "dateJoined": instance.date_joined,
             "city": profile.city,
             "organization": profile.organization,
             "telegram": profile.telegram,
