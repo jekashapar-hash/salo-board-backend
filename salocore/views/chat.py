@@ -1,12 +1,13 @@
-from rest_framework.views import APIView
-from rest_framework.response import Response
-from rest_framework import status
-from rest_framework.permissions import IsAuthenticated, IsAdminUser
 from django.shortcuts import get_object_or_404
 from drf_spectacular.utils import (
-    extend_schema,
     OpenApiParameter,
+    extend_schema,
 )
+from rest_framework import status
+from rest_framework.permissions import IsAdminUser, IsAuthenticated
+from rest_framework.response import Response
+from rest_framework.views import APIView
+
 from ..models import Chat, Message
 from ..serializers import ChatSerializer, MessageSerializer
 
@@ -31,12 +32,12 @@ class ChatListCreateView(APIView):
     )
     def get(self, request):
         queryset = Chat.objects.filter(user=request.user).order_by("-created_at")
-        
+
         is_solved_param = request.query_params.get("is_solved")
         if is_solved_param is not None:
             is_solved = is_solved_param.lower() == "true"
             queryset = queryset.filter(is_solved=is_solved)
-            
+
         serializer = ChatSerializer(queryset, many=True)
         return Response(serializer.data)
 
@@ -66,11 +67,11 @@ class ChatDetailView(APIView):
     )
     def patch(self, request, chat_id):
         chat = get_object_or_404(Chat, id=chat_id, user=request.user)
-        
+
         if "is_solved" in request.data:
             chat.is_solved = request.data["is_solved"]
             chat.save(update_fields=["is_solved"])
-            
+
         serializer = ChatSerializer(chat)
         return Response(serializer.data)
 
@@ -87,12 +88,14 @@ class ChatMessageListView(APIView):
     def get(self, request, chat_id):
         chat = get_object_or_404(Chat, id=chat_id, user=request.user)
         messages = Message.objects.filter(chat=chat).order_by("-created_at")[:50]
-        
+
         # Reverse to show chronological order if needed, but normally frontend handles it
         serializer = MessageSerializer(messages, many=True)
         return Response(serializer.data)
 
+
 # ----------------- ADMIN VIEWS -------------------
+
 
 class AdminChatListView(APIView):
     permission_classes = [IsAdminUser]
@@ -114,12 +117,12 @@ class AdminChatListView(APIView):
     )
     def get(self, request):
         is_solved_param = request.query_params.get("is_solved")
-        
+
         # By default show unsolved chats to admin unless specified otherwise
         is_solved = False
         if is_solved_param is not None:
             is_solved = is_solved_param.lower() == "true"
-            
+
         queryset = Chat.objects.filter(is_solved=is_solved).order_by("-created_at")
         serializer = ChatSerializer(queryset, many=True)
         return Response(serializer.data)
@@ -137,11 +140,11 @@ class AdminChatDetailView(APIView):
     )
     def patch(self, request, chat_id):
         chat = get_object_or_404(Chat, id=chat_id)
-        
+
         if "is_solved" in request.data:
             chat.is_solved = request.data["is_solved"]
             chat.save(update_fields=["is_solved"])
-            
+
         serializer = ChatSerializer(chat)
         return Response(serializer.data)
 
@@ -158,6 +161,6 @@ class AdminChatMessageListView(APIView):
     def get(self, request, chat_id):
         chat = get_object_or_404(Chat, id=chat_id)
         messages = Message.objects.filter(chat=chat).order_by("-created_at")[:50]
-        
+
         serializer = MessageSerializer(messages, many=True)
         return Response(serializer.data)

@@ -1,5 +1,5 @@
 from django.db import models
-from saloboard import settings
+
 from .tournament import Tournament
 
 
@@ -14,9 +14,7 @@ class Round(models.Model):
     title = models.CharField(max_length=100)
     description = models.TextField()
     orderIndex = models.IntegerField()
-    status = models.CharField(
-        max_length=20, choices=Status.choices, default=Status.DRAFT
-    )
+    status = models.CharField(max_length=20, choices=Status.choices, default=Status.DRAFT)
     start_at = models.DateTimeField()
     deadline = models.DateTimeField()
     created_at = models.DateTimeField(auto_now_add=True)

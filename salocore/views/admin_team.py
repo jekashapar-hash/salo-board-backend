@@ -1,11 +1,12 @@
-from rest_framework.views import APIView
-from rest_framework.response import Response
-from rest_framework import status
-from rest_framework.permissions import IsAdminUser
 from django.shortcuts import get_object_or_404
 from drf_spectacular.utils import extend_schema
+from rest_framework import status
+from rest_framework.permissions import IsAdminUser
+from rest_framework.response import Response
+from rest_framework.views import APIView
+
 from ..models import Team, TeamMember
-from ..serializers import TeamSerializer, TeamMemberSerializer
+from ..serializers import TeamMemberSerializer, TeamSerializer
 
 
 class AdminTeamListView(APIView):
@@ -50,10 +51,7 @@ class AdminParticipantListView(APIView):
         responses={200: TeamMemberSerializer(many=True)},
     )
     def get(self, request, tournament_id, team_id):
-        members = TeamMember.objects.filter(
-            team_id=team_id,
-            team__tournament_id=tournament_id
-        )
+        members = TeamMember.objects.filter(team_id=team_id, team__tournament_id=tournament_id)
         serializer = TeamMemberSerializer(members, many=True)
         return Response(serializer.data)
 

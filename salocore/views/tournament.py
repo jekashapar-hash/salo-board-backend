@@ -1,21 +1,22 @@
-from rest_framework.views import APIView
-from rest_framework.response import Response
-from rest_framework import status
-from rest_framework.permissions import AllowAny
 from django.db.models import Sum, Value
 from django.db.models.functions import Coalesce
 from drf_spectacular.utils import (
-    extend_schema,
-    OpenApiResponse,
     OpenApiExample,
     OpenApiParameter,
+    OpenApiResponse,
+    extend_schema,
 )
-from ..models import Tournament, Team, Round, Submission
+from rest_framework import status
+from rest_framework.permissions import AllowAny
+from rest_framework.response import Response
+from rest_framework.views import APIView
+
+from ..models import Round, Submission, Team, Tournament
 from ..serializers import (
-    TournamentSerializer,
-    TournamentDetailSerializer,
-    TeamSerializer,
     LeaderboardItemSerializer,
+    TeamSerializer,
+    TournamentDetailSerializer,
+    TournamentSerializer,
 )
 
 
@@ -26,9 +27,7 @@ class TournamentListView(APIView):
         summary="Список турнірів",
         description="Отримання списку всіх турнірів. Можна фільтрувати за назвою або статусом.",
         parameters=[
-            OpenApiParameter(
-                name="name", description="Пошук по назві", required=False, type=str
-            ),
+            OpenApiParameter(name="name", description="Пошук по назві", required=False, type=str),
             OpenApiParameter(
                 name="status",
                 description="Фільтр по статусу (напр. DR, RG)",
@@ -64,9 +63,7 @@ class TournamentDetailView(APIView):
             404: OpenApiResponse(
                 description="Турнір не знайдено",
                 response=dict,
-                examples=[
-                    OpenApiExample("Not Found", value={"error": "Турнір не найден"})
-                ],
+                examples=[OpenApiExample("Not Found", value={"error": "Турнір не найден"})],
             ),
         },
     )
@@ -74,9 +71,7 @@ class TournamentDetailView(APIView):
         try:
             tournament = Tournament.objects.get(id=tournament_id)
         except Tournament.DoesNotExist:
-            return Response(
-                {"error": "Турнир не найден"}, status=status.HTTP_404_NOT_FOUND
-            )
+            return Response({"error": "Турнир не найден"}, status=status.HTTP_404_NOT_FOUND)
 
         serializer = TournamentDetailSerializer(tournament)
         return Response(serializer.data)
@@ -90,9 +85,7 @@ class TournamentTeamsView(APIView):
         description="Отримання списку команд цього турніру, якщо is_team_visible = True.",
         responses={
             200: TeamSerializer(many=True),
-            403: OpenApiResponse(
-                description="Перегляд команд заборонено (is_team_visible=False)"
-            ),
+            403: OpenApiResponse(description="Перегляд команд заборонено (is_team_visible=False)"),
             404: OpenApiResponse(description="Турнір не знайдено"),
         },
     )
@@ -100,9 +93,7 @@ class TournamentTeamsView(APIView):
         try:
             tournament = Tournament.objects.get(id=tournament_id)
         except Tournament.DoesNotExist:
-            return Response(
-                {"error": "Турнір не знайдено"}, status=status.HTTP_404_NOT_FOUND
-            )
+            return Response({"error": "Турнір не знайдено"}, status=status.HTTP_404_NOT_FOUND)
 
         if not tournament.is_team_visible:
             return Response(
@@ -130,15 +121,11 @@ class TournamentLeaderboardView(APIView):
         try:
             tournament = Tournament.objects.get(id=tournament_id)
         except Tournament.DoesNotExist:
-            return Response(
-                {"error": "Турнір не знайдено"}, status=status.HTTP_404_NOT_FOUND
-            )
+            return Response({"error": "Турнір не знайдено"}, status=status.HTTP_404_NOT_FOUND)
 
         # Шукаємо останній завершений раунд турніру
         last_round = (
-            Round.objects.filter(tournament=tournament, status=Round.Status.EVALUATED)
-            .order_by("-orderIndex")
-            .first()
+            Round.objects.filter(tournament=tournament, status=Round.Status.EVALUATED).order_by("-orderIndex").first()
         )
 
         if not last_round:
@@ -148,11 +135,7 @@ class TournamentLeaderboardView(APIView):
         submissions = (
             Submission.objects.filter(round=last_round)
             .select_related("team")
-            .annotate(
-                total_score=Coalesce(
-                    Sum("evaluation__criterionevaluation__score"), Value(0)
-                )
-            )
+            .annotate(total_score=Coalesce(Sum("evaluation__criterionevaluation__score"), Value(0)))
         )
 
         leaderboard_data = []

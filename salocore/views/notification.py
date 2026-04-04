@@ -1,14 +1,15 @@
-from rest_framework.views import APIView
-from rest_framework.response import Response
-from rest_framework import status
-from rest_framework.permissions import IsAuthenticated
+from django.utils import timezone
 from drf_spectacular.utils import (
-    extend_schema,
-    OpenApiResponse,
     OpenApiExample,
     OpenApiParameter,
+    OpenApiResponse,
+    extend_schema,
 )
-from django.utils import timezone
+from rest_framework import status
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.response import Response
+from rest_framework.views import APIView
+
 from ..models import Notification, Team, TeamMember, Tournament
 from ..serializers import NotificationSerializer
 
@@ -48,9 +49,7 @@ class NotificationArchiveListView(APIView):
         responses={200: NotificationSerializer(many=True)},
     )
     def get(self, request):
-        nots = Notification.objects.filter(
-            user=request.user, status=Notification.Status.ARCHIVED
-        )
+        nots = Notification.objects.filter(user=request.user, status=Notification.Status.ARCHIVED)
         serializer = NotificationSerializer(nots, many=True)
         return Response(serializer.data)
 
@@ -71,9 +70,7 @@ class NotificationDetailView(APIView):
             400: OpenApiResponse(
                 description="Логічна помилка (запрошення минуло, команда повна, юзер вже в турнірі)",
                 response=dict,
-                examples=[
-                    OpenApiExample("Error", value={"error": "Запрошення минуло."})
-                ],
+                examples=[OpenApiExample("Error", value={"error": "Запрошення минуло."})],
             ),
             404: OpenApiResponse(description="Сповіщення не знайдене"),
         },
@@ -95,9 +92,7 @@ class NotificationDetailView(APIView):
             if timezone.now() > notif.how_long_active:
                 notif.status = Notification.Status.ARCHIVED
                 notif.save(update_fields=["status"])
-                return Response(
-                    {"error": "Запрошення минуло."}, status=status.HTTP_400_BAD_REQUEST
-                )
+                return Response({"error": "Запрошення минуло."}, status=status.HTTP_400_BAD_REQUEST)
 
             import urllib.parse as urlparse
 
@@ -113,24 +108,16 @@ class NotificationDetailView(APIView):
             try:
                 team = Team.objects.get(id=team_id)
             except Team.DoesNotExist:
-                return Response(
-                    {"error": "Команда не існує."}, status=status.HTTP_400_BAD_REQUEST
-                )
+                return Response({"error": "Команда не існує."}, status=status.HTTP_400_BAD_REQUEST)
 
             if team.teammember_set.count() >= team.tournament.max_team_size:
-                return Response(
-                    {"error": "Команда вже повна."}, status=status.HTTP_400_BAD_REQUEST
-                )
+                return Response({"error": "Команда вже повна."}, status=status.HTTP_400_BAD_REQUEST)
 
             if team.tournament.status != Tournament.Status.REGISTRATION:
-                return Response(
-                    {"error": "Реєстрація закрита."}, status=status.HTTP_400_BAD_REQUEST
-                )
+                return Response({"error": "Реєстрація закрита."}, status=status.HTTP_400_BAD_REQUEST)
 
             if (
-                TeamMember.objects.filter(
-                    team__tournament=team.tournament, user=request.user
-                )
+                TeamMember.objects.filter(team__tournament=team.tournament, user=request.user)
                 .exclude(team__status=Team.Status.DISQUALIFIED)
                 .exists()
             ):

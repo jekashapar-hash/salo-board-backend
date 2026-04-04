@@ -1,21 +1,22 @@
-from rest_framework.views import APIView
-from rest_framework.response import Response
+from drf_spectacular.utils import (
+    OpenApiExample,
+    OpenApiResponse,
+    extend_schema,
+)
 from rest_framework import status
 from rest_framework.permissions import AllowAny, IsAuthenticated
-from drf_spectacular.utils import (
-    extend_schema,
-    OpenApiResponse,
-    OpenApiExample,
-)
+from rest_framework.response import Response
+from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
+
 from ..models import User
 from ..serializers import (
     CustomTokenObtainPairSerializer,
-    TokenResponseSerializer,
-    RegisterSerializer,
     LogoutRequestSerializer,
     LogoutResponseSerializer,
+    RegisterSerializer,
+    TokenResponseSerializer,
 )
 
 
@@ -143,9 +144,9 @@ class RegisterView(APIView):
         if User.objects.filter(email=email).exists():
             return Response({"error": "Користувач з таким email вже існує"}, status=400)
 
-        import uuid
-        import string
         import random
+        import string
+        import uuid
 
         username = str(uuid.uuid4())
 
@@ -225,3 +226,4 @@ class LogoutView(APIView):
             return Response(
                 {"error": "Невалідний токен або ви не авторизовані"}, status=400
             )
+

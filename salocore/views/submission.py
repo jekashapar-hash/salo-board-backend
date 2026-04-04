@@ -1,10 +1,11 @@
-from rest_framework.views import APIView
-from rest_framework.response import Response
+from django.utils import timezone
+from drf_spectacular.utils import OpenApiExample, OpenApiResponse, extend_schema
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
-from drf_spectacular.utils import extend_schema, OpenApiResponse, OpenApiExample
-from django.utils import timezone
-from ..models import TeamMember, Submission, Round
+from rest_framework.response import Response
+from rest_framework.views import APIView
+
+from ..models import Round, Submission, TeamMember
 from ..serializers import SubmissionSerializer
 
 
@@ -35,9 +36,7 @@ class TeamSubmitListView(APIView):
             400: OpenApiResponse(
                 description="Помилка валідації, дедлайн пройшов, або сабміт вже існує",
                 response=dict,
-                examples=[
-                    OpenApiExample("Error", value={"error": "Термін здачі пройшов."})
-                ],
+                examples=[OpenApiExample("Error", value={"error": "Термін здачі пройшов."})],
             ),
             403: OpenApiResponse(description="Користувач не є учасником цієї команди"),
             404: OpenApiResponse(description="Раунд не знайдено"),
@@ -48,29 +47,21 @@ class TeamSubmitListView(APIView):
             return Response(status=status.HTTP_403_FORBIDDEN)
         round_id = request.data.get("round")
         if not round_id:
-            return Response(
-                {"error": "Вкажіть round"}, status=status.HTTP_400_BAD_REQUEST
-            )
+            return Response({"error": "Вкажіть round"}, status=status.HTTP_400_BAD_REQUEST)
         try:
             round_obj = Round.objects.get(id=round_id, tournament__team__id=team_id)
         except Round.DoesNotExist:
             return Response(status=status.HTTP_404_NOT_FOUND)
 
         if timezone.now() > round_obj.deadline:
-            return Response(
-                {"error": "Термін здачі пройшов."}, status=status.HTTP_400_BAD_REQUEST
-            )
+            return Response({"error": "Термін здачі пройшов."}, status=status.HTTP_400_BAD_REQUEST)
 
         if Submission.objects.filter(round_id=round_id, team_id=team_id).exists():
-            return Response(
-                {"error": "Сабміт вже створений."}, status=status.HTTP_400_BAD_REQUEST
-            )
+            return Response({"error": "Сабміт вже створений."}, status=status.HTTP_400_BAD_REQUEST)
 
         serializer = SubmissionSerializer(data=request.data)
         if serializer.is_valid():
-            serializer.save(
-                round=round_obj, team_id=team_id, status=Submission.Status.DRAFT
-            )
+            serializer.save(round=round_obj, team_id=team_id, status=Submission.Status.DRAFT)
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -84,9 +75,7 @@ class TeamSubmitDetailView(APIView):
         request=SubmissionSerializer,
         responses={
             200: SubmissionSerializer,
-            400: OpenApiResponse(
-                description="Дедлайн пройшов, або некоректна зміна статусу"
-            ),
+            400: OpenApiResponse(description="Дедлайн пройшов, або некоректна зміна статусу"),
             403: OpenApiResponse(description="Користувач не учасник команди"),
             404: OpenApiResponse(description="Сабміт не знайдено"),
         },
@@ -103,14 +92,9 @@ class TeamSubmitDetailView(APIView):
         new_status = request.data.get("status")
 
         if round_passed:
-            return Response(
-                {"error": "Термін здачі пройшов."}, status=status.HTTP_400_BAD_REQUEST
-            )
+            return Response({"error": "Термін здачі пройшов."}, status=status.HTTP_400_BAD_REQUEST)
 
-        if (
-            sub.status == Submission.Status.SUBMITTED
-            and new_status != Submission.Status.DRAFT
-        ):
+        if sub.status == Submission.Status.SUBMITTED and new_status != Submission.Status.DRAFT:
             return Response(
                 {"error": "Сабміт відправлено. Скасуйте (status=DR), щоб редагувати."},
                 status=status.HTTP_400_BAD_REQUEST,
@@ -118,10 +102,7 @@ class TeamSubmitDetailView(APIView):
 
         serializer = SubmissionSerializer(sub, data=request.data, partial=True)
         if serializer.is_valid():
-            if (
-                new_status == Submission.Status.SUBMITTED
-                and sub.status == Submission.Status.DRAFT
-            ):
+            if new_status == Submission.Status.SUBMITTED and sub.status == Submission.Status.DRAFT:
                 sub.submitted_at = timezone.now()
                 serializer.save(submitted_at=timezone.now())
             else:

@@ -1,9 +1,10 @@
-from rest_framework.views import APIView
-from rest_framework.response import Response
+from django.db.models import Q
+from drf_spectacular.utils import OpenApiResponse, extend_schema
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
-from drf_spectacular.utils import extend_schema, OpenApiResponse
-from django.db.models import Q
+from rest_framework.response import Response
+from rest_framework.views import APIView
+
 from ..models import Team, TeamMember, Tournament
 from ..serializers import TeamSerializer
 
@@ -52,10 +53,7 @@ class TeamArchiveListView(APIView):
     def get(self, request):
         teams = (
             Team.objects.filter(teammember__user=request.user)
-            .filter(
-                Q(status=Team.Status.ARCHIVED)
-                | Q(tournament__status=Tournament.Status.FINISHED)
-            )
+            .filter(Q(status=Team.Status.ARCHIVED) | Q(tournament__status=Tournament.Status.FINISHED))
             .distinct()
         )
         serializer = TeamSerializer(teams, many=True)

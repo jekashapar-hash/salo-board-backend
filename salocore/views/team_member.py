@@ -1,16 +1,18 @@
-from rest_framework.views import APIView
-from rest_framework.response import Response
-from rest_framework import status
-from rest_framework.permissions import IsAuthenticated
+from datetime import timedelta
+
+from django.utils import timezone
 from drf_spectacular.utils import (
-    extend_schema,
-    OpenApiResponse,
     OpenApiExample,
     OpenApiParameter,
+    OpenApiResponse,
+    extend_schema,
 )
-from django.utils import timezone
-from datetime import timedelta
-from ..models import Team, TeamMember, Tournament, User, Notification
+from rest_framework import status
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.response import Response
+from rest_framework.views import APIView
+
+from ..models import Notification, Team, TeamMember, Tournament, User
 from ..serializers import TeamMemberSerializer
 from ..utils import check_tournament_deadlines
 
@@ -47,9 +49,7 @@ class TeamParticipantListCreateView(APIView):
             201: OpenApiResponse(
                 description="Запрошення надіслано успішно",
                 response=dict,
-                examples=[
-                    OpenApiExample("Success", value={"status": "Запрошення надіслано."})
-                ],
+                examples=[OpenApiExample("Success", value={"status": "Запрошення надіслано."})],
             ),
             400: OpenApiResponse(
                 description="Не валідно (команда переповнена або реєстрація закрита)",
@@ -57,18 +57,14 @@ class TeamParticipantListCreateView(APIView):
                 examples=[
                     OpenApiExample(
                         "Error",
-                        value={
-                            "error": "Максимальна кількість учасників вже досягнута."
-                        },
+                        value={"error": "Максимальна кількість учасників вже досягнута."},
                     )
                 ],
             ),
             403: OpenApiResponse(
                 description="Не капітан",
                 response=dict,
-                examples=[
-                    OpenApiExample("Forbidden", value={"error": "Ви не капітан."})
-                ],
+                examples=[OpenApiExample("Forbidden", value={"error": "Ви не капітан."})],
             ),
             404: OpenApiResponse(description="Користувач або команда не знайдена"),
         },
@@ -79,19 +75,13 @@ class TeamParticipantListCreateView(APIView):
         except Team.DoesNotExist:
             return Response(status=status.HTTP_404_NOT_FOUND)
 
-        is_captain = TeamMember.objects.filter(
-            team=team, user=request.user, is_captain=True
-        ).exists()
+        is_captain = TeamMember.objects.filter(team=team, user=request.user, is_captain=True).exists()
         if not is_captain:
-            return Response(
-                {"error": "Ви не капітан."}, status=status.HTTP_403_FORBIDDEN
-            )
+            return Response({"error": "Ви не капітан."}, status=status.HTTP_403_FORBIDDEN)
 
         check_tournament_deadlines(team.tournament)
         if team.tournament.status != Tournament.Status.REGISTRATION:
-            return Response(
-                {"error": "Реєстрація не йде."}, status=status.HTTP_400_BAD_REQUEST
-            )
+            return Response({"error": "Реєстрація не йде."}, status=status.HTTP_400_BAD_REQUEST)
 
         if team.teammember_set.count() >= team.tournament.max_team_size:
             return Response(
@@ -99,9 +89,7 @@ class TeamParticipantListCreateView(APIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        invite_code = request.data.get("invite_code") or request.query_params.get(
-            "invite_code"
-        )
+        invite_code = request.data.get("invite_code") or request.query_params.get("invite_code")
         if not invite_code:
             return Response(
                 {"error": "Передайте invite_code користувача."},
@@ -124,9 +112,7 @@ class TeamParticipantListCreateView(APIView):
             action_url=f"/tournaments/{team.tournament.id}?team_id={team.id}",
             how_long_active=timezone.now() + timedelta(days=3),
         )
-        return Response(
-            {"status": "Запрошення надіслано."}, status=status.HTTP_201_CREATED
-        )
+        return Response({"status": "Запрошення надіслано."}, status=status.HTTP_201_CREATED)
 
 
 class TeamParticipantDetailView(APIView):
@@ -145,9 +131,7 @@ class TeamParticipantDetailView(APIView):
         ],
         request=dict,
         responses={
-            204: OpenApiResponse(
-                description="Учасника успішно видалено / Команду покинуто"
-            ),
+            204: OpenApiResponse(description="Учасника успішно видалено / Команду покинуто"),
             400: OpenApiResponse(
                 description="Помилка бізнес логіки (наприклад, не передано ID нового капітана)",
                 response=dict,
@@ -161,9 +145,7 @@ class TeamParticipantDetailView(APIView):
             403: OpenApiResponse(
                 description="Недостатньо прав",
                 response=dict,
-                examples=[
-                    OpenApiExample("Forbidden", value={"error": "Ви не капітан."})
-                ],
+                examples=[OpenApiExample("Forbidden", value={"error": "Ви не капітан."})],
             ),
             404: OpenApiResponse(description="Команду або учасника не знайдено"),
         },
@@ -200,9 +182,7 @@ class TeamParticipantDetailView(APIView):
                     )
                 else:
                     return Response(
-                        {
-                            "error": "Неможливо видалити, реєстрація завершена і досягнуто мінімум учасників."
-                        },
+                        {"error": "Неможливо видалити, реєстрація завершена і досягнуто мінімум учасників."},
                         status=status.HTTP_400_BAD_REQUEST,
                     )
 
@@ -216,9 +196,7 @@ class TeamParticipantDetailView(APIView):
                             status=status.HTTP_400_BAD_REQUEST,
                         )
                     try:
-                        new_cap = TeamMember.objects.get(
-                            team=team, user_id=new_captain_id
-                        )
+                        new_cap = TeamMember.objects.get(team=team, user_id=new_captain_id)
                         new_cap.is_captain = True
                         new_cap.save()
                     except TeamMember.DoesNotExist:
@@ -233,9 +211,7 @@ class TeamParticipantDetailView(APIView):
                 target_member.delete()
         else:
             if not initiator_member.is_captain:
-                return Response(
-                    {"error": "Ви не капітан."}, status=status.HTTP_403_FORBIDDEN
-                )
+                return Response({"error": "Ви не капітан."}, status=status.HTTP_403_FORBIDDEN)
             if target_member.is_captain:
                 return Response(
                     {"error": "Неможливо видалити капітана."},
@@ -252,11 +228,7 @@ class TeamCanCreateParticipantView(APIView):
     @extend_schema(
         summary="Чи можна додати учасника",
         description="Перевіряє, чи поточний користувач є капітаном, чи відкрита реєстрація турніру та чи не досягнуто ліміт на розмір команди.",
-        responses={
-            200: OpenApiResponse(
-                description="Логічне значення (True/False)", response=bool
-            )
-        },
+        responses={200: OpenApiResponse(description="Логічне значення (True/False)", response=bool)},
     )
     def get(self, request, team_id):
         try:
@@ -264,9 +236,7 @@ class TeamCanCreateParticipantView(APIView):
         except Team.DoesNotExist:
             return Response(status=status.HTTP_404_NOT_FOUND)
 
-        is_captain = TeamMember.objects.filter(
-            team=team, user=request.user, is_captain=True
-        ).exists()
+        is_captain = TeamMember.objects.filter(team=team, user=request.user, is_captain=True).exists()
         can_add = (
             is_captain
             and team.tournament.status == Tournament.Status.REGISTRATION
