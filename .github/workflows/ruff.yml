@@ -5,6 +5,8 @@ on: [push, pull_request]
 jobs:
   ruff:
     runs-on: ubuntu-latest
+    env:
+      SECRET_KEY: "django-insecure-test-key-for-ci"
     permissions:
       contents: read
       pull-requests: write
