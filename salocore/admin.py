@@ -1,23 +1,26 @@
 from django.contrib import admin
+
 from .models import (
-    User,
-    UserProfile,
-    Tournament,
-    TournamentJury,
-    TournamentAdmin as TournamentAdminModel,
-    Round,
-    EvaluationCriterion,
-    RoundRequirement,
-    RoundAttachment,
-    Team,
-    TeamMember,
-    Submission,
-    Evaluation,
-    CriterionEvaluation,
-    RequirementEvaluation,
     Chat,
+    CriterionEvaluation,
+    Evaluation,
+    EvaluationCriterion,
     Message,
     Notification,
+    RequirementEvaluation,
+    Round,
+    RoundAttachment,
+    RoundRequirement,
+    Submission,
+    Team,
+    TeamMember,
+    Tournament,
+    TournamentJury,
+    User,
+    UserProfile,
+)
+from .models import (
+    TournamentAdmin as TournamentAdminModel,
 )
 
 admin.site.register(User)

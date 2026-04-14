@@ -1,5 +1,5 @@
 from django.db import models
-from django.utils import timezone
+
 from saloboard import settings
 
 
@@ -15,9 +15,7 @@ class Tournament(models.Model):
     title = models.CharField(max_length=100)
     description = models.TextField()
     rules = models.TextField()
-    status = models.CharField(
-        max_length=20, choices=Status.choices, default=Status.DRAFT
-    )
+    status = models.CharField(max_length=20, choices=Status.choices, default=Status.DRAFT)
     start_date = models.DateTimeField()
     reg_open_at = models.DateTimeField()
     reg_close_at = models.DateTimeField()

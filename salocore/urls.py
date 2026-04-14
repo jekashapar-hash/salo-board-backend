@@ -1,11 +1,11 @@
 from django.urls import path
-from rest_framework.authtoken.views import obtain_auth_token
-from .views import *
 from drf_spectacular.views import (
     SpectacularAPIView,
-    SpectacularSwaggerView,
     SpectacularRedocView,
+    SpectacularSwaggerView,
 )
+
+from .views import *
 
 urlpatterns = [
     path("register", RegisterView.as_view(), name="register"),
@@ -139,9 +139,7 @@ urlpatterns = [
         "admin/tournaments/<int:tournament_id>/start",
         AdminTournamentStartView.as_view(),
     ),
-    path(
-        "admin/tournaments/<int:tournament_id>/jury", AdminTournamentJuryView.as_view()
-    ),
+    path("admin/tournaments/<int:tournament_id>/jury", AdminTournamentJuryView.as_view()),
     path(
         "admin/tournaments/<int:tournament_id>/admin",
         AdminTournamentAdminsView.as_view(),

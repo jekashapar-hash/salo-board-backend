@@ -1,20 +1,21 @@
-from rest_framework.views import APIView
-from rest_framework.response import Response
+from drf_spectacular.utils import OpenApiParameter, extend_schema
 from rest_framework import status
 from rest_framework.permissions import AllowAny, IsAuthenticated
-from drf_spectacular.utils import extend_schema, OpenApiParameter
+from rest_framework.response import Response
+from rest_framework.views import APIView
+
 from ..models import (
-    Tournament,
-    Round,
     EvaluationCriterion,
-    RoundRequirement,
+    Round,
     RoundAttachment,
+    RoundRequirement,
+    Tournament,
 )
 from ..serializers import (
-    RoundSerializer,
     EvaluationCriterionSerializer,
-    RoundRequirementSerializer,
     RoundAttachmentSerializer,
+    RoundRequirementSerializer,
+    RoundSerializer,
 )
 from ..utils import check_and_update_round_deadlines, check_tournament_deadlines
 
@@ -68,13 +69,8 @@ class RoundDetailView(APIView):
 
         check_and_update_round_deadlines(round_obj)
 
-        if (
-            round_obj.status == Round.Status.DRAFT
-            and round_obj.tournament.creator != request.user
-        ):
-            return Response(
-                {"error": "Чернетки недоступні"}, status=status.HTTP_403_FORBIDDEN
-            )
+        if round_obj.status == Round.Status.DRAFT and round_obj.tournament.creator != request.user:
+            return Response({"error": "Чернетки недоступні"}, status=status.HTTP_403_FORBIDDEN)
 
         serializer = RoundSerializer(round_obj)
         return Response(serializer.data)
@@ -100,9 +96,7 @@ class CriterionListView(APIView):
 class RequirementListView(APIView):
     permission_classes = [AllowAny]
 
-    @extend_schema(
-        summary="Список вимог раунду", responses=RoundRequirementSerializer(many=True)
-    )
+    @extend_schema(summary="Список вимог раунду", responses=RoundRequirementSerializer(many=True))
     def get(self, request, tournament_id, round_id):
         try:
             round_obj = Round.objects.get(id=round_id, tournament_id=tournament_id)

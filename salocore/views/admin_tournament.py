@@ -1,23 +1,21 @@
-from rest_framework.views import APIView
-from rest_framework.response import Response
-from rest_framework import status
-from rest_framework.permissions import IsAdminUser
-from django.shortcuts import get_object_or_404
 from django.contrib.auth import get_user_model
+from django.shortcuts import get_object_or_404
 from drf_spectacular.utils import (
     extend_schema,
-    OpenApiResponse,
-    OpenApiExample,
-    OpenApiParameter,
 )
-from ..models import Tournament, TournamentJury, TournamentAdmin
+from rest_framework import status
+from rest_framework.permissions import IsAdminUser
+from rest_framework.response import Response
+from rest_framework.views import APIView
+
+from ..models import Tournament, TournamentAdmin, TournamentJury
+from ..permissions import IsTournamentCreator, IsTournamentCreatorOrReadOnly
 from ..serializers import (
-    TournamentSerializer,
+    TournamentAdminSerializer,
     TournamentDetailSerializer,
     TournamentJurySerializer,
-    TournamentAdminSerializer,
+    TournamentSerializer,
 )
-from ..permissions import IsTournamentCreatorOrReadOnly, IsTournamentCreator
 
 User = get_user_model()
 
@@ -78,9 +76,7 @@ class AdminTournamentDetailView(APIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        serializer = TournamentDetailSerializer(
-            tournament, data=request.data, partial=True
-        )
+        serializer = TournamentDetailSerializer(tournament, data=request.data, partial=True)
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data)

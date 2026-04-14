@@ -1,24 +1,20 @@
-from rest_framework.views import APIView
-from rest_framework.response import Response
-from rest_framework import status
-from rest_framework.permissions import IsAdminUser
 from django.shortcuts import get_object_or_404
 from drf_spectacular.utils import (
     extend_schema,
-    OpenApiResponse,
-    OpenApiExample,
-    OpenApiParameter,
 )
-from ..models import (
-    Tournament, Round, EvaluationCriterion, RoundRequirement, RoundAttachment
-)
+from rest_framework import status
+from rest_framework.permissions import IsAdminUser
+from rest_framework.response import Response
+from rest_framework.views import APIView
+
+from ..models import EvaluationCriterion, Round, RoundRequirement, Tournament
+from ..permissions import IsTournamentCreator, IsTournamentCreatorOrReadOnly
 from ..serializers import (
-    RoundSerializer,
     EvaluationCriterionSerializer,
-    RoundRequirementSerializer,
     RoundAttachmentSerializer,
+    RoundRequirementSerializer,
+    RoundSerializer,
 )
-from ..permissions import IsTournamentCreatorOrReadOnly, IsTournamentCreator
 
 
 class AdminRoundListView(APIView):
@@ -133,10 +129,11 @@ class AdminRoundStartView(APIView):
             )
 
         # Перевірка попереднього раунду
-        prev_round = Round.objects.filter(
-            tournament=round_inst.tournament,
-            orderIndex__lt=round_inst.orderIndex
-        ).order_by("-orderIndex").first()
+        prev_round = (
+            Round.objects.filter(tournament=round_inst.tournament, orderIndex__lt=round_inst.orderIndex)
+            .order_by("-orderIndex")
+            .first()
+        )
 
         if prev_round and prev_round.status != Round.Status.EVALUATED:
             return Response(

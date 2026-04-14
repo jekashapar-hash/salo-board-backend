@@ -16,3 +16,52 @@ dependencies = [
     "channels-redis>=4.0.0",
     "daphne>=4.2.1",
 ]
+
+[dependency-groups]
+dev = [
+    "pytest>=9.0.2",
+    "pytest-cov>=7.1.0",
+    "pytest-django>=4.12.0",
+    "ruff>=0.15.9",
+]
+
+[tool.ruff]
+line-length = 120
+target-version = "py312"
+exclude = ["**/migrations/*.py"]
+
+[tool.ruff.lint]
+select = [
+    "E",
+    "F",
+    "I",
+    "B",
+    "UP",
+    "DJ",
+    "SIM",
+    "C4",
+    "ARG",
+]
+ignore = []
+
+fixable = ["ALL"]
+unfixable = []
+
+dummy-variable-rgx = "^(_+|(_+[a-zA-Z0-9_]*[a-zA-Z0-9]+?))$"
+
+[tool.ruff.format]
+
+quote-style = "double"
+
+indent-style = "space"
+
+skip-magic-trailing-comma = false
+line-ending = "auto"
+
+[tool.pytest.ini_options]
+DJANGO_SETTINGS_MODULE = "saloboard.settings"
+python_files = ["tests.py", "test_*.py", "*_tests.py"]
+addopts = "--cov=salocore --cov-report=term-missing"
+
+[tool.coverage.run]
+omit = ["*/migrations/*", "*/tests/*", "manage.py", "saloboard/*"]

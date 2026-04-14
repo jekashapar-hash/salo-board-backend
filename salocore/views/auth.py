@@ -1,21 +1,22 @@
-from rest_framework.views import APIView
-from rest_framework.response import Response
+from drf_spectacular.utils import (
+    OpenApiExample,
+    OpenApiResponse,
+    extend_schema,
+)
 from rest_framework import status
 from rest_framework.permissions import AllowAny, IsAuthenticated
-from drf_spectacular.utils import (
-    extend_schema,
-    OpenApiResponse,
-    OpenApiExample,
-)
+from rest_framework.response import Response
+from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
+
 from ..models import User
 from ..serializers import (
     CustomTokenObtainPairSerializer,
-    TokenResponseSerializer,
-    RegisterSerializer,
     LogoutRequestSerializer,
     LogoutResponseSerializer,
+    RegisterSerializer,
+    TokenResponseSerializer,
 )
 
 
@@ -46,9 +47,7 @@ class CustomTokenObtainPairView(TokenObtainPairView):
                 examples=[
                     OpenApiExample(
                         "Unauthorized",
-                        value={
-                            "detail": "No active account found with the given credentials"
-                        },
+                        value={"detail": "No active account found with the given credentials"},
                     )
                 ],
             ),
@@ -143,23 +142,17 @@ class RegisterView(APIView):
         if User.objects.filter(email=email).exists():
             return Response({"error": "Користувач з таким email вже існує"}, status=400)
 
-        import uuid
-        import string
         import random
+        import string
+        import uuid
 
         username = str(uuid.uuid4())
 
-        invite_code = "".join(
-            random.choices(string.ascii_uppercase + string.digits, k=8)
-        )
+        invite_code = "".join(random.choices(string.ascii_uppercase + string.digits, k=8))
         while User.objects.filter(invite_code=invite_code).exists():
-            invite_code = "".join(
-                random.choices(string.ascii_uppercase + string.digits, k=8)
-            )
+            invite_code = "".join(random.choices(string.ascii_uppercase + string.digits, k=8))
 
-        user = User.objects.create_user(
-            username=username, email=email, password=password, invite_code=invite_code
-        )
+        user = User.objects.create_user(username=username, email=email, password=password, invite_code=invite_code)
 
         refresh = RefreshToken.for_user(user)
 
@@ -204,9 +197,7 @@ class LogoutView(APIView):
                 examples=[
                     OpenApiExample(
                         "Unauthorized",
-                        value={
-                            "detail": "Authentication credentials were not provided."
-                        },
+                        value={"detail": "Authentication credentials were not provided."},
                     )
                 ],
             ),
@@ -222,6 +213,4 @@ class LogoutView(APIView):
             token.blacklist()
             return Response({"message": "Вихід успішний"}, status=200)
         except Exception:
-            return Response(
-                {"error": "Невалідний токен або ви не авторизовані"}, status=400
-            )
+            return Response({"error": "Невалідний токен або ви не авторизовані"}, status=400)

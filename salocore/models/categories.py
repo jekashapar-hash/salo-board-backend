@@ -1,5 +1,5 @@
-from django.db import models
 from django.conf import settings
+from django.db import models
 
 
 class Chat(models.Model):
@@ -40,8 +40,6 @@ class Notification(models.Model):
     type = models.CharField(max_length=20, choices=Type.choices)
     action_type = models.CharField(max_length=20, choices=ActionType.choices)
     action_url = models.CharField(max_length=200, blank=True)
-    status = models.CharField(
-        max_length=20, choices=Status.choices, default=Status.UNREAD
-    )
+    status = models.CharField(max_length=20, choices=Status.choices, default=Status.UNREAD)
     how_long_active = models.DateTimeField()
     created_at = models.DateTimeField(auto_now_add=True)
