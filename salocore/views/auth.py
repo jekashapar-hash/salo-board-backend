@@ -47,9 +47,7 @@ class CustomTokenObtainPairView(TokenObtainPairView):
                 examples=[
                     OpenApiExample(
                         "Unauthorized",
-                        value={
-                            "detail": "No active account found with the given credentials"
-                        },
+                        value={"detail": "No active account found with the given credentials"},
                     )
                 ],
             ),
@@ -150,17 +148,11 @@ class RegisterView(APIView):
 
         username = str(uuid.uuid4())
 
-        invite_code = "".join(
-            random.choices(string.ascii_uppercase + string.digits, k=8)
-        )
+        invite_code = "".join(random.choices(string.ascii_uppercase + string.digits, k=8))
         while User.objects.filter(invite_code=invite_code).exists():
-            invite_code = "".join(
-                random.choices(string.ascii_uppercase + string.digits, k=8)
-            )
+            invite_code = "".join(random.choices(string.ascii_uppercase + string.digits, k=8))
 
-        user = User.objects.create_user(
-            username=username, email=email, password=password, invite_code=invite_code
-        )
+        user = User.objects.create_user(username=username, email=email, password=password, invite_code=invite_code)
 
         refresh = RefreshToken.for_user(user)
 
@@ -205,9 +197,7 @@ class LogoutView(APIView):
                 examples=[
                     OpenApiExample(
                         "Unauthorized",
-                        value={
-                            "detail": "Authentication credentials were not provided."
-                        },
+                        value={"detail": "Authentication credentials were not provided."},
                     )
                 ],
             ),
@@ -223,7 +213,4 @@ class LogoutView(APIView):
             token.blacklist()
             return Response({"message": "Вихід успішний"}, status=200)
         except Exception:
-            return Response(
-                {"error": "Невалідний токен або ви не авторизовані"}, status=400
-            )
-
+            return Response({"error": "Невалідний токен або ви не авторизовані"}, status=400)
