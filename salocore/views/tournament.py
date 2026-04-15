@@ -11,11 +11,13 @@ from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from ..models import Round, Submission, Team, Tournament
+from ..models import Round, Submission, Team, Tournament, TournamentAdmin, TournamentJury
 from ..serializers import (
     LeaderboardItemSerializer,
     TeamSerializer,
+    TournamentAdminSerializer,
     TournamentDetailSerializer,
+    TournamentJurySerializer,
     TournamentSerializer,
 )
 
@@ -152,4 +154,56 @@ class TournamentLeaderboardView(APIView):
         leaderboard_data.sort(key=lambda x: x["score"], reverse=True)
 
         serializer = LeaderboardItemSerializer(leaderboard_data, many=True)
+        return Response(serializer.data)
+
+
+class TournamentJuryView(APIView):
+    permission_classes = [AllowAny]
+
+    @extend_schema(
+        summary="Журі турніру",
+        description="Отримання списку журі для вказаного турніру.",
+        responses={
+            200: TournamentJurySerializer(many=True),
+            404: OpenApiResponse(
+                description="Турнір не знайдено",
+                response=dict,
+                examples=[OpenApiExample("Not Found", value={"error": "Турнір не знайдено"})],
+            ),
+        },
+    )
+    def get(self, request, tournament_id):
+        try:
+            tournament = Tournament.objects.get(id=tournament_id)
+        except Tournament.DoesNotExist:
+            return Response({"error": "Турнір не знайдено"}, status=status.HTTP_404_NOT_FOUND)
+
+        jury_members = TournamentJury.objects.filter(tournament=tournament)
+        serializer = TournamentJurySerializer(jury_members, many=True)
+        return Response(serializer.data)
+
+
+class TournamentAdminView(APIView):
+    permission_classes = [AllowAny]
+
+    @extend_schema(
+        summary="Адміністратори турніру",
+        description="Отримання списку адміністраторів для вказаного турніру.",
+        responses={
+            200: TournamentAdminSerializer(many=True),
+            404: OpenApiResponse(
+                description="Турнір не знайдено",
+                response=dict,
+                examples=[OpenApiExample("Not Found", value={"error": "Турнір не знайдено"})],
+            ),
+        },
+    )
+    def get(self, request, tournament_id):
+        try:
+            tournament = Tournament.objects.get(id=tournament_id)
+        except Tournament.DoesNotExist:
+            return Response({"error": "Турнір не знайдено"}, status=status.HTTP_404_NOT_FOUND)
+
+        admins = TournamentAdmin.objects.filter(tournament=tournament)
+        serializer = TournamentAdminSerializer(admins, many=True)
         return Response(serializer.data)
