@@ -150,9 +150,14 @@ urlpatterns = [
         AdminTournamentStartView.as_view(),
     ),
     path("admin/tournaments/<int:tournament_id>/jury", AdminTournamentJuryView.as_view()),
+    path("admin/tournaments/<int:tournament_id>/jury/<int:user_id>", AdminTournamentJuryDetailView.as_view()),
     path(
         "admin/tournaments/<int:tournament_id>/admin",
         AdminTournamentAdminsView.as_view(),
+    ),
+    path(
+        "admin/tournaments/<int:tournament_id>/admin/<int:user_id>",
+        AdminTournamentAdminDetailView.as_view(),
     ),
     path("admin/tournaments/<int:tournament_id>/rounds", AdminRoundListView.as_view()),
     path(
@@ -168,12 +173,24 @@ urlpatterns = [
         AdminRoundAttachmentView.as_view(),
     ),
     path(
+        "admin/tournaments/<int:tournament_id>/rounds/<int:round_id>/attachment/<int:pk>",
+        AdminRoundAttachmentDetailView.as_view(),
+    ),
+    path(
         "admin/tournaments/<int:tournament_id>/rounds/<int:round_id>/requirement",
         AdminRoundRequirementView.as_view(),
     ),
     path(
+        "admin/tournaments/<int:tournament_id>/rounds/<int:round_id>/requirement/<int:pk>",
+        AdminRoundRequirementDetailView.as_view(),
+    ),
+    path(
         "admin/tournaments/<int:tournament_id>/rounds/<int:round_id>/criterion",
         AdminRoundCriterionView.as_view(),
+    ),
+    path(
+        "admin/tournaments/<int:tournament_id>/rounds/<int:round_id>/criterion/<int:pk>",
+        AdminRoundCriterionDetailView.as_view(),
     ),
     path("admin/tournaments/<int:tournament_id>/teams", AdminTeamListView.as_view()),
     path(

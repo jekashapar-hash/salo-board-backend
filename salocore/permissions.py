@@ -42,6 +42,14 @@ class IsTournamentCreatorOrReadOnly(permissions.BasePermission):
         except Tournament.DoesNotExist:
             return False
 
+    def has_object_permission(self, request, view, obj):
+        if request.method in permissions.SAFE_METHODS:
+            return True
+        tournament = obj if isinstance(obj, Tournament) else getattr(obj, "tournament", None)
+        if tournament is None:
+            return False
+        return tournament.creator == request.user
+
 
 class IsTournamentJury(permissions.BasePermission):
     def has_permission(self, request, view):

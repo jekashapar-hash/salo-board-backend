@@ -36,6 +36,11 @@ class TeamListView(APIView):
     def post(self, request):
         serializer = TeamSerializer(data=request.data)
         if serializer.is_valid():
+            tournament = serializer.validated_data["tournament"]
+            if tournament.status != Tournament.Status.REGISTRATION:
+                return Response(
+                    {"detail": "Реєстрація команд в цей турнір зараз закрита."}, status=status.HTTP_400_BAD_REQUEST
+                )
             team = serializer.save(status=Team.Status.REGISTRATED)
             TeamMember.objects.create(team=team, user=request.user, is_captain=True)
             return Response(serializer.data, status=status.HTTP_201_CREATED)

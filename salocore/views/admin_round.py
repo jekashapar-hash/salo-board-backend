@@ -7,7 +7,7 @@ from rest_framework.permissions import IsAdminUser
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from ..models import EvaluationCriterion, Round, RoundRequirement, Tournament
+from ..models import EvaluationCriterion, Round, RoundAttachment, RoundRequirement, Tournament
 from ..permissions import IsTournamentCreator, IsTournamentCreatorOrReadOnly
 from ..serializers import (
     EvaluationCriterionSerializer,
@@ -147,6 +147,21 @@ class AdminRoundStartView(APIView):
         return Response(serializer.data)
 
 
+class AdminRoundAttachmentDetailView(APIView):
+    permission_classes = [IsAdminUser, IsTournamentCreator]
+
+    @extend_schema(
+        summary="Видалити матеріал раунду (Адмін)",
+        description="Видалення матеріалу.",
+        responses={204: None},
+    )
+    def delete(self, request, tournament_id, round_id, pk):
+        attachment = get_object_or_404(RoundAttachment, id=pk, round__id=round_id, round__tournament_id=tournament_id)
+        self.check_object_permissions(request, attachment.round.tournament)
+        attachment.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
 class AdminRoundAttachmentView(APIView):
     permission_classes = [IsAdminUser, IsTournamentCreator]
 
@@ -167,6 +182,21 @@ class AdminRoundAttachmentView(APIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
+class AdminRoundRequirementDetailView(APIView):
+    permission_classes = [IsAdminUser, IsTournamentCreator]
+
+    @extend_schema(
+        summary="Видалити вимогу раунду (Адмін)",
+        description="Видалення вимоги.",
+        responses={204: None},
+    )
+    def delete(self, request, tournament_id, round_id, pk):
+        req = get_object_or_404(RoundRequirement, id=pk, round__id=round_id, round__tournament_id=tournament_id)
+        self.check_object_permissions(request, req.round.tournament)
+        req.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
 class AdminRoundRequirementView(APIView):
     permission_classes = [IsAdminUser, IsTournamentCreator]
 
@@ -185,6 +215,21 @@ class AdminRoundRequirementView(APIView):
             serializer.save(round=round_inst)
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class AdminRoundCriterionDetailView(APIView):
+    permission_classes = [IsAdminUser, IsTournamentCreator]
+
+    @extend_schema(
+        summary="Видалити критерій оцінювання раунду (Адмін)",
+        description="Видалення критерію.",
+        responses={204: None},
+    )
+    def delete(self, request, tournament_id, round_id, pk):
+        crit = get_object_or_404(EvaluationCriterion, id=pk, round__id=round_id, round__tournament_id=tournament_id)
+        self.check_object_permissions(request, crit.round.tournament)
+        crit.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
 
 class AdminRoundCriterionView(APIView):
