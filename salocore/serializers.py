@@ -28,6 +28,9 @@ class RegisterSerializer(serializers.Serializer):
     email = serializers.EmailField()
     password = serializers.CharField(write_only=True)
 
+    def validate_email(self, value):
+        return value.lower()
+
 
 class TokenResponseSerializer(serializers.Serializer):
     access = serializers.CharField()
@@ -93,6 +96,15 @@ class UserProfileSerializer(serializers.Serializer):
 
         return instance
 
+    def validate_telegram(self, value):
+        if value:
+            val = value.strip()
+            if not (val.startswith("@") or val.startswith("t.me/") or val.startswith("https://t.me/")):
+                raise serializers.ValidationError("Telegram має починатися з @, t.me/ або https://t.me/")
+            if len(val) < 4:
+                raise serializers.ValidationError("Введений рядок занадто короткий.")
+        return value
+
 
 class UserNameSerializer(serializers.Serializer):
     firstName = serializers.CharField(read_only=True, help_text="Ім'я користувача")
@@ -119,6 +131,24 @@ class TournamentSerializer(serializers.ModelSerializer):
         ]
         read_only_fields = ("id",)
 
+    def validate(self, attrs):
+        start_date = attrs.get('start_date', getattr(self.instance, 'start_date', None))
+        reg_open_at = attrs.get('reg_open_at', getattr(self.instance, 'reg_open_at', None))
+        reg_close_at = attrs.get('reg_close_at', getattr(self.instance, 'reg_close_at', None))
+        ended_at = attrs.get('ended_at', getattr(self.instance, 'ended_at', None))
+        
+        errors = {}
+        if reg_open_at and reg_close_at and reg_open_at > reg_close_at:
+            errors['reg_close_at'] = 'Реєстрація має закінчуватись після її початку або одночасно.'
+        if reg_close_at and start_date and reg_close_at > start_date:
+            errors['start_date'] = 'Турнір не може початися до закриття реєстрації.'
+        if start_date and ended_at and start_date > ended_at:
+            errors['ended_at'] = 'Турнір має закінчуватись після свого початку або одночасно.'
+            
+        if errors:
+            raise serializers.ValidationError(errors)
+        return attrs
+
 
 class TournamentDetailSerializer(serializers.ModelSerializer):
     class Meta:
@@ -138,6 +168,36 @@ class TournamentDetailSerializer(serializers.ModelSerializer):
             "is_team_visible",
             "ended_at",
         ]
+
+    def validate(self, attrs):
+        start_date = attrs.get('start_date', getattr(self.instance, 'start_date', None))
+        reg_open_at = attrs.get('reg_open_at', getattr(self.instance, 'reg_open_at', None))
+        reg_close_at = attrs.get('reg_close_at', getattr(self.instance, 'reg_close_at', None))
+        ended_at = attrs.get('ended_at', getattr(self.instance, 'ended_at', None))
+        
+        errors = {}
+        if reg_open_at and reg_close_at and reg_open_at > reg_close_at:
+            errors['reg_close_at'] = 'Реєстрація має закінчуватись після її початку або одночасно.'
+        if reg_close_at and start_date and reg_close_at > start_date:
+            errors['start_date'] = 'Турнір не може початися до закриття реєстрації.'
+        if start_date and ended_at and start_date > ended_at:
+            errors['ended_at'] = 'Турнір має закінчуватись після свого початку або одночасно.'
+
+        min_team = attrs.get('min_team_size', getattr(self.instance, 'min_team_size', None))
+        max_team_size = attrs.get('max_team_size', getattr(self.instance, 'max_team_size', None))
+        if min_team is not None and max_team_size is not None and min_team > max_team_size:
+            errors['max_team_size'] = 'Максимальний розмір команди не може бути меншим за мінімальний.'
+
+        max_team = attrs.get('max_team', getattr(self.instance, 'max_team', None))
+        if max_team is not None and max_team < 1:
+            errors['max_team'] = 'Максимальна кількість команд має бути більше 0.'
+            
+        if min_team is not None and min_team < 1:
+            errors['min_team_size'] = 'Команда має складатися хоча б з однієї людини.'
+
+        if errors:
+            raise serializers.ValidationError(errors)
+        return attrs
 
 
 class TournamentJurySerializer(serializers.ModelSerializer):
@@ -221,6 +281,15 @@ class RoundSerializer(serializers.ModelSerializer):
         model = Round
         fields = "__all__"
         read_only_fields = ("id", "created_at", "updated_at")
+
+    def validate(self, attrs):
+        start_at = attrs.get('start_at', getattr(self.instance, 'start_at', None))
+        deadline = attrs.get('deadline', getattr(self.instance, 'deadline', None))
+        
+        if start_at and deadline and start_at > deadline:
+            raise serializers.ValidationError({"deadline": "Дедлайн раунду має бути після його початку або одночасно."})
+            
+        return attrs
 
 
 class EvaluationCriterionSerializer(serializers.ModelSerializer):
