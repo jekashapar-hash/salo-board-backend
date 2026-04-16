@@ -42,18 +42,22 @@ class EvaluationDetailView(APIView):
 
         if not evaluation and is_jury:
             evaluation = Evaluation.objects.create(submission=sub, jury=request.user, status=Evaluation.Status.DRAFT)
-            criterions = EvaluationCriterion.objects.filter(round=sub.round)
-            for c in criterions:
-                CriterionEvaluation.objects.create(evaluation=evaluation, criterion=c, score=0, comment="")
-
-            reqs = RoundRequirement.objects.filter(round=sub.round)
-            for r in reqs:
-                RequirementEvaluation.objects.create(
-                    evaluation=evaluation, requirement=r, is_satisfied=False, comment=""
-                )
 
         if not evaluation:
             return Response({"error": "Оцінка не знайдена."}, status=status.HTTP_404_NOT_FOUND)
+
+        if is_jury:
+            existing_criterion_ids = set(evaluation.criterionevaluation_set.values_list("criterion_id", flat=True))
+            for c in EvaluationCriterion.objects.filter(round=sub.round):
+                if c.id not in existing_criterion_ids:
+                    CriterionEvaluation.objects.create(evaluation=evaluation, criterion=c, score=0, comment="")
+
+            existing_req_ids = set(evaluation.requirementevaluation_set.values_list("requirement_id", flat=True))
+            for r in RoundRequirement.objects.filter(round=sub.round):
+                if r.id not in existing_req_ids:
+                    RequirementEvaluation.objects.create(
+                        evaluation=evaluation, requirement=r, is_satisfied=False, comment=""
+                    )
 
         serializer = EvaluationSerializer(evaluation)
         return Response(serializer.data)

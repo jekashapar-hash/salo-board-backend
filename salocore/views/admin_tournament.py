@@ -126,6 +126,23 @@ class AdminTournamentStartView(APIView):
         return Response(serializer.data)
 
 
+class AdminTournamentJuryDetailView(APIView):
+    permission_classes = [IsAdminUser, IsTournamentCreator]
+
+    @extend_schema(
+        summary="Видалити журі з турніру (Адмін)",
+        description="Видалення члена журі за його user_id.",
+        responses={204: None},
+    )
+    def delete(self, request, tournament_id, user_id):
+        tournament = get_object_or_404(Tournament, id=tournament_id)
+        self.check_object_permissions(request, tournament)
+
+        jury = get_object_or_404(TournamentJury, tournament=tournament, user_id=user_id)
+        jury.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
 class AdminTournamentJuryView(APIView):
     permission_classes = [IsAdminUser, IsTournamentCreatorOrReadOnly]
 
@@ -164,6 +181,23 @@ class AdminTournamentJuryView(APIView):
         jury = TournamentJury.objects.create(tournament=tournament, user=user)
         serializer = TournamentJurySerializer(jury)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+
+class AdminTournamentAdminDetailView(APIView):
+    permission_classes = [IsAdminUser, IsTournamentCreator]
+
+    @extend_schema(
+        summary="Видалити адміністратора турніру",
+        description="Видалення адміністратора за його user_id.",
+        responses={204: None},
+    )
+    def delete(self, request, tournament_id, user_id):
+        tournament = get_object_or_404(Tournament, id=tournament_id)
+        self.check_object_permissions(request, tournament)
+
+        admin = get_object_or_404(TournamentAdmin, tournament=tournament, user_id=user_id)
+        admin.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
 
 class AdminTournamentAdminsView(APIView):
