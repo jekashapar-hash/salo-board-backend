@@ -190,10 +190,27 @@ class NotificationSerializer(serializers.ModelSerializer):
         read_only_fields = ("id", "created_at", "how_long_active", "status", "user")
 
 
+class LeaderboardCriterionSerializer(serializers.Serializer):
+    criterion_id = serializers.IntegerField()
+    category = serializers.CharField()
+    title = serializers.CharField()
+    weight = serializers.IntegerField()
+    raw_score = serializers.FloatField()
+    final_score = serializers.FloatField()
+
+
+class LeaderboardRoundSerializer(serializers.Serializer):
+    round_id = serializers.IntegerField()
+    round_title = serializers.CharField()
+    round_score = serializers.FloatField()
+    criterions = LeaderboardCriterionSerializer(many=True)
+
+
 class LeaderboardItemSerializer(serializers.Serializer):
     team_id = serializers.IntegerField()
     team_name = serializers.CharField()
-    score = serializers.IntegerField()
+    total_score = serializers.FloatField()
+    rounds = LeaderboardRoundSerializer(many=True)
 
 
 # -------------------------- Rounds & Requirements ------------------------------------------

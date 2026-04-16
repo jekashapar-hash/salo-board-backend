@@ -1,5 +1,3 @@
-from django.db.models import Sum, Value
-from django.db.models.functions import Coalesce
 from drf_spectacular.utils import (
     OpenApiExample,
     OpenApiParameter,
@@ -123,33 +121,81 @@ class TournamentLeaderboardView(APIView):
         except Tournament.DoesNotExist:
             return Response({"error": "Турнір не знайдено"}, status=status.HTTP_404_NOT_FOUND)
 
-        # Шукаємо останній завершений раунд турніру
-        last_round = (
-            Round.objects.filter(tournament=tournament, status=Round.Status.EVALUATED).order_by("-orderIndex").first()
+        evaluated_rounds = Round.objects.filter(tournament=tournament, status=Round.Status.EVALUATED).order_by(
+            "orderIndex"
         )
 
-        if not last_round:
-            return Response([], status=status.HTTP_200_OK)
+        teams = Team.objects.filter(
+            tournament=tournament,
+        ).exclude(status__in=[Team.Status.DISQUALIFIED, Team.Status.ARCHIVED])
 
-        # Отримуємо сабміти раунду та рахуємо суму балів
-        submissions = (
-            Submission.objects.filter(round=last_round)
-            .select_related("team")
-            .annotate(total_score=Coalesce(Sum("evaluation__criterionevaluation__score"), Value(0)))
+        eval_round_ids = [r.id for r in evaluated_rounds]
+
+        submissions = Submission.objects.filter(round_id__in=eval_round_ids, team__in=teams).prefetch_related(
+            "evaluation_set",
+            "evaluation_set__criterionevaluation_set",
+            "evaluation_set__criterionevaluation_set__criterion",
         )
 
-        leaderboard_data = []
-        for submission in submissions:
-            leaderboard_data.append(
-                {
-                    "team_id": submission.team.id,
-                    "team_name": submission.team.name,
-                    "score": submission.total_score,
-                }
-            )
+        team_stats = {}
+        for team in teams:
+            team_stats[team.id] = {"team_id": team.id, "team_name": team.name, "total_score": 0.0, "rounds": []}
+            # Ініціалізуємо раунди в правильному порядку
+            for round_obj in evaluated_rounds:
+                team_stats[team.id]["rounds"].append(
+                    {"round_id": round_obj.id, "round_title": round_obj.title, "round_score": 0.0, "criterions": []}
+                )
 
-        # Сортування за зменшенням оцінки
-        leaderboard_data.sort(key=lambda x: x["score"], reverse=True)
+        for sub in submissions:
+            t_id = sub.team_id
+            r_id = sub.round_id
+
+            if t_id not in team_stats:
+                continue
+
+            r_data = next((r for r in team_stats[t_id]["rounds"] if r["round_id"] == r_id), None)
+            if not r_data:
+                continue
+
+            crit_evals = {}
+            for eval_obj in sub.evaluation_set.all():
+                if eval_obj.status == "SB":  # Враховуємо тільки SUBMITTED оцінки
+                    for ce in eval_obj.criterionevaluation_set.all():
+                        crit = ce.criterion
+                        if crit.id not in crit_evals:
+                            crit_evals[crit.id] = {
+                                "criterion_id": crit.id,
+                                "category": crit.category,
+                                "title": crit.title,
+                                "weight": crit.weight,
+                                "scores": [],
+                            }
+                        crit_evals[crit.id]["scores"].append(ce.score)
+
+            for c_id, c_data in crit_evals.items():
+                if not c_data["scores"]:
+                    continue
+
+                avg_score = sum(c_data["scores"]) / len(c_data["scores"])
+                final_score = avg_score * c_data["weight"]
+
+                r_data["criterions"].append(
+                    {
+                        "criterion_id": c_id,
+                        "category": c_data["category"],
+                        "title": c_data["title"],
+                        "weight": c_data["weight"],
+                        "raw_score": round(avg_score, 2),
+                        "final_score": round(final_score, 2),
+                    }
+                )
+                r_data["round_score"] += final_score
+
+            team_stats[t_id]["total_score"] += r_data["round_score"]
+            team_stats[t_id]["total_score"] = round(team_stats[t_id]["total_score"], 2)
+
+        leaderboard_data = list(team_stats.values())
+        leaderboard_data.sort(key=lambda x: x["total_score"], reverse=True)
 
         serializer = LeaderboardItemSerializer(leaderboard_data, many=True)
         return Response(serializer.data)
