@@ -4,7 +4,8 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from ..serializers import UserNameSerializer, UserProfileSerializer
+from ..models import Tournament, TournamentJury, TeamMember
+from ..serializers import UserNameSerializer, UserProfileSerializer, UserRolesSerializer
 
 
 class UserProfileView(APIView):
@@ -60,4 +61,40 @@ class UserNameView(APIView):
     )
     def get(self, request):
         serializer = UserNameSerializer(request.user)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+class UserRolesView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    @extend_schema(
+        summary="Ролі користувача",
+        description="Повертає булеві значення для ролей (participant, jury, admin) стосовно АКТИВНИХ (Registration, Running) турнірів.",
+        responses={200: UserRolesSerializer},
+        tags=["User"],
+    )
+    def get(self, request):
+        user = request.user
+        
+        is_admin = user.is_staff or getattr(user, 'is_admin', False)
+
+        active_statuses = [Tournament.Status.REGISTRATION, Tournament.Status.RUNNING]
+
+        is_jury = TournamentJury.objects.filter(
+            user=user,
+            tournament__status__in=active_statuses
+        ).exists()
+
+        is_participant = TeamMember.objects.filter(
+            user=user,
+            team__tournament__status__in=active_statuses
+        ).exists()
+
+        data = {
+            "participant": is_participant,
+            "jury": is_jury,
+            "admin": is_admin
+        }
+        
+        serializer = UserRolesSerializer(data)
         return Response(serializer.data, status=status.HTTP_200_OK)

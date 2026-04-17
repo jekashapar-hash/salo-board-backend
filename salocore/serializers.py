@@ -117,6 +117,12 @@ class UserNameSerializer(serializers.Serializer):
         }
 
 
+class UserRolesSerializer(serializers.Serializer):
+    participant = serializers.BooleanField(help_text="Користувач є у команді активного турніру")
+    jury = serializers.BooleanField(help_text="Користувач є журі в активному турнірі")
+    admin = serializers.BooleanField(help_text="Користувач є персоналом (staff)")
+
+
 class TournamentSerializer(serializers.ModelSerializer):
     class Meta:
         model = Tournament
