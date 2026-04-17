@@ -4,7 +4,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from ..models import Tournament, TournamentJury, TeamMember
+from ..models import TeamMember, Tournament, TournamentJury
 from ..serializers import UserNameSerializer, UserProfileSerializer, UserRolesSerializer
 
 
@@ -75,26 +75,16 @@ class UserRolesView(APIView):
     )
     def get(self, request):
         user = request.user
-        
-        is_admin = user.is_staff or getattr(user, 'is_admin', False)
+
+        is_admin = user.is_staff or getattr(user, "is_admin", False)
 
         active_statuses = [Tournament.Status.REGISTRATION, Tournament.Status.RUNNING]
 
-        is_jury = TournamentJury.objects.filter(
-            user=user,
-            tournament__status__in=active_statuses
-        ).exists()
+        is_jury = TournamentJury.objects.filter(user=user, tournament__status__in=active_statuses).exists()
 
-        is_participant = TeamMember.objects.filter(
-            user=user,
-            team__tournament__status__in=active_statuses
-        ).exists()
+        is_participant = TeamMember.objects.filter(user=user, team__tournament__status__in=active_statuses).exists()
 
-        data = {
-            "participant": is_participant,
-            "jury": is_jury,
-            "admin": is_admin
-        }
-        
+        data = {"participant": is_participant, "jury": is_jury, "admin": is_admin}
+
         serializer = UserRolesSerializer(data)
         return Response(serializer.data, status=status.HTTP_200_OK)
