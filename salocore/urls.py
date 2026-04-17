@@ -140,6 +140,11 @@ urlpatterns = [
         UserNameView.as_view(),
         name="user-name",
     ),
+    path(
+        "user/roles",
+        UserRolesView.as_view(),
+        name="user-roles",
+    ),
     path("chats", ChatListCreateView.as_view()),
     path("chats/<int:chat_id>", ChatDetailView.as_view()),
     path("chats/<int:chat_id>/messages", ChatMessageListView.as_view()),
