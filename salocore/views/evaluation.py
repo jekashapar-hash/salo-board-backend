@@ -1,5 +1,5 @@
 from django.utils import timezone
-from drf_spectacular.utils import extend_schema, OpenApiParameter
+from drf_spectacular.utils import OpenApiParameter, extend_schema
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
@@ -196,7 +196,7 @@ class TournamentJuryEvaluationsView(APIView):
                 required=False,
                 type=str,
             )
-        ]
+        ],
     )
     def get(self, request, tournament_id):
         if not TournamentJury.objects.filter(tournament_id=tournament_id, user=request.user).exists():
@@ -207,15 +207,12 @@ class TournamentJuryEvaluationsView(APIView):
         except Tournament.DoesNotExist:
             return Response({"error": "Турнір не знайдено"}, status=status.HTTP_404_NOT_FOUND)
 
-        evaluations = Evaluation.objects.filter(
-            submission__round__tournament=tournament,
-            jury=request.user
-        )
-        
+        evaluations = Evaluation.objects.filter(submission__round__tournament=tournament, jury=request.user)
+
         status_param = request.query_params.get("status")
         if status_param in [Evaluation.Status.DRAFT, Evaluation.Status.SUBMITTED]:
             evaluations = evaluations.filter(status=status_param)
-            
+
         serializer = EvaluationSerializer(evaluations, many=True)
         return Response(serializer.data)
 
@@ -234,7 +231,7 @@ class TournamentJuryEvaluationsCountView(APIView):
                 required=False,
                 type=str,
             )
-        ]
+        ],
     )
     def get(self, request, tournament_id):
         if not TournamentJury.objects.filter(tournament_id=tournament_id, user=request.user).exists():
@@ -245,14 +242,11 @@ class TournamentJuryEvaluationsCountView(APIView):
         except Tournament.DoesNotExist:
             return Response({"error": "Турнір не знайдено"}, status=status.HTTP_404_NOT_FOUND)
 
-        evaluations = Evaluation.objects.filter(
-            submission__round__tournament=tournament,
-            jury=request.user
-        )
-        
+        evaluations = Evaluation.objects.filter(submission__round__tournament=tournament, jury=request.user)
+
         status_param = request.query_params.get("status")
         if status_param in [Evaluation.Status.DRAFT, Evaluation.Status.SUBMITTED]:
             evaluations = evaluations.filter(status=status_param)
-            
+
         count = evaluations.count()
         return Response({"count": count})
