@@ -47,6 +47,16 @@ urlpatterns = [
         name="tournament-admins",
     ),
     path(
+        "tournaments/<int:tournament_id>/jury-evaluations",
+        TournamentJuryEvaluationsView.as_view(),
+        name="tournament-jury-evaluations",
+    ),
+    path(
+        "tournaments/<int:tournament_id>/jury-evaluations/count",
+        TournamentJuryEvaluationsCountView.as_view(),
+        name="tournament-jury-evaluations-count",
+    ),
+    path(
         "tournaments/<int:tournament_id>/rounds",
         RoundListView.as_view(),
         name="tournament-rounds",
