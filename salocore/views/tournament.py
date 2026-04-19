@@ -127,7 +127,6 @@ class TournamentTeamsView(APIView):
 class TournamentLeaderboardView(APIView):
     permission_classes = [AllowAny]
 
-
     @extend_schema(
         summary="Лідерборд турніру",
         description="Отримання відсортованого списку команд і їх агрегованих балів за раундами.",
@@ -271,7 +270,6 @@ class TournamentAdminView(APIView):
 
 class TournamentTeamLeaderboardDetailView(APIView):
     permission_classes = [AllowAny]
-
 
     @extend_schema(
         summary="Деталі лідерборду команди",

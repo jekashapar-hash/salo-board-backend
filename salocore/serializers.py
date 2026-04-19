@@ -404,9 +404,7 @@ class CriterionEvaluationSerializer(serializers.ModelSerializer):
             if value < 0:
                 raise serializers.ValidationError("Бал не може бути відёмним.")
             if value > criterion.max_score:
-                raise serializers.ValidationError(
-                    f"Бал не може перевищувати максимальний бал ({criterion.max_score})."
-                )
+                raise serializers.ValidationError(f"Бал не може перевищувати максимальний бал ({criterion.max_score}).")
         return value
 
 
