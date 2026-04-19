@@ -1,3 +1,7 @@
+import random
+import string
+import uuid
+
 from drf_spectacular.utils import (
     OpenApiExample,
     OpenApiResponse,
@@ -141,10 +145,6 @@ class RegisterView(APIView):
 
         if User.objects.filter(email=email).exists():
             return Response({"error": "Користувач з таким email вже існує"}, status=400)
-
-        import random
-        import string
-        import uuid
 
         username = str(uuid.uuid4())
 

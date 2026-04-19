@@ -103,7 +103,6 @@ class TeamSubmitDetailView(APIView):
         serializer = SubmissionSerializer(sub, data=request.data, partial=True)
         if serializer.is_valid():
             if new_status == Submission.Status.SUBMITTED and sub.status == Submission.Status.DRAFT:
-                sub.submitted_at = timezone.now()
                 serializer.save(submitted_at=timezone.now())
             else:
                 serializer.save()

@@ -1,5 +1,6 @@
 from datetime import timedelta
 
+from django.db import transaction
 from django.utils import timezone
 from drf_spectacular.utils import (
     OpenApiExample,
@@ -30,6 +31,8 @@ class TeamParticipantListCreateView(APIView):
         },
     )
     def get(self, request, team_id):
+        if not TeamMember.objects.filter(team_id=team_id, user=request.user).exists():
+            return Response({"error": "Доступ заборонено"}, status=status.HTTP_403_FORBIDDEN)
         members = TeamMember.objects.filter(team_id=team_id)
         serializer = TeamMemberSerializer(members, many=True)
         return Response(serializer.data)
@@ -205,8 +208,9 @@ class TeamParticipantDetailView(APIView):
                             status=status.HTTP_400_BAD_REQUEST,
                         )
                 target_member.delete()
-                if team.teammember_set.count() == 0:
-                    team.delete()
+                with transaction.atomic():
+                    if team.teammember_set.count() == 0:
+                        team.delete()
             else:
                 target_member.delete()
         else:

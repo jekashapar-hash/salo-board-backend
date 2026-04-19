@@ -120,6 +120,12 @@ class AdminRoundStartView(APIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
+        if round_inst.tournament.status != Tournament.Status.RUNNING:
+            return Response(
+                {"error": "Турнір повинен бути у статусі Running."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
         has_criterion = EvaluationCriterion.objects.filter(round=round_inst).exists()
         has_req = RoundRequirement.objects.filter(round=round_inst).exists()
         if not has_criterion or not has_req:

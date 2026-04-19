@@ -132,5 +132,7 @@ class NotificationDetailView(APIView):
         elif action == "reject":
             notif.status = Notification.Status.ARCHIVED
             notif.save(update_fields=["status"])
+        else:
+            return Response({"error": "Невідома дія."}, status=status.HTTP_400_BAD_REQUEST)
 
         return Response({"status": getattr(notif, "status", None)})
