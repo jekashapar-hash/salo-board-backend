@@ -68,7 +68,12 @@ class EvaluationDetailView(APIView):
         responses=EvaluationSerializer,
     )
     def patch(self, request, tournament_id, round_id, submission_id):
-        evaluation = Evaluation.objects.filter(submission_id=submission_id, jury=request.user).first()
+        evaluation = Evaluation.objects.filter(
+            submission_id=submission_id,
+            submission__round_id=round_id,
+            submission__round__tournament_id=tournament_id,
+            jury=request.user,
+        ).first()
         if not evaluation:
             return Response(status=status.HTTP_404_NOT_FOUND)
 
@@ -103,6 +108,8 @@ class CriterionEvaluationDetailView(APIView):
             ce = CriterionEvaluation.objects.get(
                 id=crit_eval_id,
                 evaluation__submission_id=submission_id,
+                evaluation__submission__round_id=round_id,
+                evaluation__submission__round__tournament_id=tournament_id,
                 evaluation__jury=request.user,
             )
         except CriterionEvaluation.DoesNotExist:
@@ -135,6 +142,8 @@ class RequirementEvaluationDetailView(APIView):
             re = RequirementEvaluation.objects.get(
                 id=req_eval_id,
                 evaluation__submission_id=submission_id,
+                evaluation__submission__round_id=round_id,
+                evaluation__submission__round__tournament_id=tournament_id,
                 evaluation__jury=request.user,
             )
         except RequirementEvaluation.DoesNotExist:
@@ -159,7 +168,12 @@ class EvaluationCriterionListView(APIView):
         responses={200: CriterionEvaluationSerializer(many=True)},
     )
     def get(self, request, tournament_id, round_id, submission_id):
-        criterions = CriterionEvaluation.objects.filter(evaluation__submission_id=submission_id)
+        try:
+            sub = Submission.objects.get(id=submission_id, round_id=round_id, round__tournament_id=tournament_id)
+        except Submission.DoesNotExist:
+            return Response(status=status.HTTP_404_NOT_FOUND)
+
+        criterions = CriterionEvaluation.objects.filter(evaluation__submission=sub)
         if not Tournament.objects.filter(id=tournament_id, creator=request.user).exists():
             criterions = criterions.filter(evaluation__jury=request.user)
         serializer = CriterionEvaluationSerializer(criterions, many=True)
@@ -175,7 +189,12 @@ class EvaluationRequirementListView(APIView):
         responses={200: RequirementEvaluationSerializer(many=True)},
     )
     def get(self, request, tournament_id, round_id, submission_id):
-        reqs = RequirementEvaluation.objects.filter(evaluation__submission_id=submission_id)
+        try:
+            sub = Submission.objects.get(id=submission_id, round_id=round_id, round__tournament_id=tournament_id)
+        except Submission.DoesNotExist:
+            return Response(status=status.HTTP_404_NOT_FOUND)
+
+        reqs = RequirementEvaluation.objects.filter(evaluation__submission=sub)
         if not Tournament.objects.filter(id=tournament_id, creator=request.user).exists():
             reqs = reqs.filter(evaluation__jury=request.user)
         serializer = RequirementEvaluationSerializer(reqs, many=True)
@@ -199,13 +218,13 @@ class TournamentJuryEvaluationsView(APIView):
         ],
     )
     def get(self, request, tournament_id):
-        if not TournamentJury.objects.filter(tournament_id=tournament_id, user=request.user).exists():
-            return Response({"error": "Ви не є журі цього турніру."}, status=status.HTTP_403_FORBIDDEN)
-
         try:
             tournament = Tournament.objects.get(id=tournament_id)
         except Tournament.DoesNotExist:
             return Response({"error": "Турнір не знайдено"}, status=status.HTTP_404_NOT_FOUND)
+
+        if not TournamentJury.objects.filter(tournament=tournament, user=request.user).exists():
+            return Response({"error": "Ви не є журі цього турніру."}, status=status.HTTP_403_FORBIDDEN)
 
         evaluations = Evaluation.objects.filter(submission__round__tournament=tournament, jury=request.user)
 
@@ -234,13 +253,13 @@ class TournamentJuryEvaluationsCountView(APIView):
         ],
     )
     def get(self, request, tournament_id):
-        if not TournamentJury.objects.filter(tournament_id=tournament_id, user=request.user).exists():
-            return Response({"error": "Ви не є журі цього турніру."}, status=status.HTTP_403_FORBIDDEN)
-
         try:
             tournament = Tournament.objects.get(id=tournament_id)
         except Tournament.DoesNotExist:
             return Response({"error": "Турнір не знайдено"}, status=status.HTTP_404_NOT_FOUND)
+
+        if not TournamentJury.objects.filter(tournament=tournament, user=request.user).exists():
+            return Response({"error": "Ви не є журі цього турніру."}, status=status.HTTP_403_FORBIDDEN)
 
         evaluations = Evaluation.objects.filter(submission__round__tournament=tournament, jury=request.user)
 

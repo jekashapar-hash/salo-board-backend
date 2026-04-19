@@ -5,7 +5,7 @@ from drf_spectacular.utils import (
     extend_schema,
 )
 from rest_framework import status
-from rest_framework.permissions import AllowAny
+from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
@@ -57,7 +57,9 @@ class TournamentListView(APIView):
 
         role = request.query_params.get("role")
         if role and role != "all":
-            if role == "participant":
+            if not request.user.is_authenticated:
+                queryset = queryset.none()
+            elif role == "participant":
                 queryset = queryset.filter(team__teammember__user=request.user).distinct()
             elif role == "jury":
                 queryset = queryset.filter(tournamentjury__user=request.user).distinct()
@@ -87,7 +89,7 @@ class TournamentDetailView(APIView):
         try:
             tournament = Tournament.objects.get(id=tournament_id)
         except Tournament.DoesNotExist:
-            return Response({"error": "Турнир не найден"}, status=status.HTTP_404_NOT_FOUND)
+            return Response({"error": "Турнір не знайдено"}, status=status.HTTP_404_NOT_FOUND)
 
         serializer = TournamentDetailSerializer(tournament)
         return Response(serializer.data)
@@ -125,6 +127,7 @@ class TournamentTeamsView(APIView):
 class TournamentLeaderboardView(APIView):
     permission_classes = [AllowAny]
 
+
     @extend_schema(
         summary="Лідерборд турніру",
         description="Отримання відсортованого списку команд і їх агрегованих балів за раундами.",
@@ -136,6 +139,12 @@ class TournamentLeaderboardView(APIView):
             tournament = Tournament.objects.get(id=tournament_id)
         except Tournament.DoesNotExist:
             return Response({"error": "Турнір не знайдено"}, status=status.HTTP_404_NOT_FOUND)
+
+        if not tournament.is_team_visible:
+            return Response(
+                {"error": "Перегляд команд заборонено"},
+                status=status.HTTP_403_FORBIDDEN,
+            )
 
         evaluated_rounds = (
             Round.objects.filter(tournament=tournament, status=Round.Status.EVALUATED)
@@ -189,7 +198,7 @@ class TournamentLeaderboardView(APIView):
                             crit_evals[crit.id] = {"weight": crit.weight, "scores": []}
                         crit_evals[crit.id]["scores"].append(ce.score)
 
-            for c_id, c_data in crit_evals.items():
+            for _c_id, c_data in crit_evals.items():
                 if not c_data["scores"]:
                     continue
 
@@ -209,7 +218,7 @@ class TournamentLeaderboardView(APIView):
 
 
 class TournamentJuryView(APIView):
-    permission_classes = [AllowAny]
+    permission_classes = [IsAuthenticated]
 
     @extend_schema(
         summary="Журі турніру",
@@ -235,7 +244,7 @@ class TournamentJuryView(APIView):
 
 
 class TournamentAdminView(APIView):
-    permission_classes = [AllowAny]
+    permission_classes = [IsAuthenticated]
 
     @extend_schema(
         summary="Адміністратори турніру",
@@ -263,6 +272,7 @@ class TournamentAdminView(APIView):
 class TournamentTeamLeaderboardDetailView(APIView):
     permission_classes = [AllowAny]
 
+
     @extend_schema(
         summary="Деталі лідерборду команди",
         description="Отримання детальної інформації про бали команди за всі оцінені раунди.",
@@ -274,6 +284,12 @@ class TournamentTeamLeaderboardDetailView(APIView):
             tournament = Tournament.objects.get(id=tournament_id)
         except Tournament.DoesNotExist:
             return Response({"error": "Турнір не знайдено"}, status=status.HTTP_404_NOT_FOUND)
+
+        if not tournament.is_team_visible:
+            return Response(
+                {"error": "Перегляд команд заборонено"},
+                status=status.HTTP_403_FORBIDDEN,
+            )
 
         evaluated_rounds = Round.objects.filter(tournament=tournament, status=Round.Status.EVALUATED).order_by(
             "orderIndex"

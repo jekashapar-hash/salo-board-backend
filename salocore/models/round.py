@@ -1,3 +1,4 @@
+from django.core.validators import MinValueValidator
 from django.db import models
 
 from .tournament import Tournament
@@ -28,8 +29,8 @@ class EvaluationCriterion(models.Model):
     round = models.ForeignKey(Round, on_delete=models.CASCADE)
     category = models.CharField(max_length=100)
     title = models.CharField(max_length=100)
-    max_score = models.IntegerField()
-    weight = models.IntegerField()
+    max_score = models.IntegerField(validators=[MinValueValidator(1)])
+    weight = models.IntegerField(validators=[MinValueValidator(1)])
     order_index = models.IntegerField()
 
     def __str__(self):

@@ -1,7 +1,25 @@
 from rest_framework import serializers
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 
-from .models import *
+from .models import (
+    Chat,
+    CriterionEvaluation,
+    Evaluation,
+    EvaluationCriterion,
+    Message,
+    Notification,
+    RequirementEvaluation,
+    Round,
+    RoundAttachment,
+    RoundRequirement,
+    Submission,
+    Team,
+    TeamMember,
+    Tournament,
+    TournamentAdmin,
+    TournamentJury,
+    User,
+)
 
 # -------------------------- Auth ------------------------------------------
 
@@ -290,7 +308,7 @@ class RoundSerializer(serializers.ModelSerializer):
     class Meta:
         model = Round
         fields = "__all__"
-        read_only_fields = ("id", "created_at", "updated_at")
+        read_only_fields = ("id", "tournament", "created_at", "updated_at")
 
     def validate(self, attrs):
         start_at = attrs.get("start_at", getattr(self.instance, "start_at", None))
@@ -378,6 +396,18 @@ class CriterionEvaluationSerializer(serializers.ModelSerializer):
         model = CriterionEvaluation
         fields = "__all__"
         read_only_fields = ("id", "evaluation", "criterion")
+
+    def validate_score(self, value):
+        # criterion is read_only, so it lives in the instance during PATCH
+        criterion = getattr(self.instance, "criterion", None)
+        if criterion is not None:
+            if value < 0:
+                raise serializers.ValidationError("Бал не може бути відёмним.")
+            if value > criterion.max_score:
+                raise serializers.ValidationError(
+                    f"Бал не може перевищувати максимальний бал ({criterion.max_score})."
+                )
+        return value
 
 
 class RequirementEvaluationSerializer(serializers.ModelSerializer):

@@ -120,6 +120,13 @@ class AdminTournamentStartView(APIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
+        has_jury = TournamentJury.objects.filter(tournament=tournament).exists()
+        if not has_jury:
+            return Response(
+                {"error": "Турнір повинен мати хоча б одного члена журі."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
         tournament.status = Tournament.Status.REGISTRATION
         tournament.save()
         serializer = TournamentSerializer(tournament)

@@ -81,5 +81,14 @@ class TeamDetailView(APIView):
             team = Team.objects.get(id=team_id)
         except Team.DoesNotExist:
             return Response(status=status.HTTP_404_NOT_FOUND)
+
+        if not team.tournament.is_team_visible:
+            is_member = TeamMember.objects.filter(team=team, user=request.user).exists()
+            if not is_member:
+                return Response(
+                    {"error": "Перегляд команди заборонено"},
+                    status=status.HTTP_403_FORBIDDEN,
+                )
+
         serializer = TeamSerializer(team)
         return Response(serializer.data)
