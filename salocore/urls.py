@@ -16,6 +16,7 @@ urlpatterns = [
     path("docs", SpectacularSwaggerView.as_view(url_name="schema")),
     path("redoc", SpectacularRedocView.as_view(url_name="schema")),
     path("tournaments", TournamentListView.as_view(), name="tournament-list"),
+    path("tournaments/archive", ArchivedTournamentListView.as_view(), name="tournament-archive-list"),
     path(
         "tournaments/<int:tournament_id>",
         TournamentDetailView.as_view(),

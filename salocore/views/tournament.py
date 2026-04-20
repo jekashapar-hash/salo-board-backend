@@ -45,7 +45,7 @@ class TournamentListView(APIView):
         responses={200: TournamentSerializer(many=True)},
     )
     def get(self, request):
-        queryset = Tournament.objects.all()
+        queryset = Tournament.objects.exclude(status=Tournament.Status.ARCHIVED)
 
         name = request.query_params.get("name")
         if name:
@@ -54,6 +54,45 @@ class TournamentListView(APIView):
         status_param = request.query_params.get("status")
         if status_param and status_param != "all":
             queryset = queryset.filter(status=status_param)
+
+        role = request.query_params.get("role")
+        if role and role != "all":
+            if not request.user.is_authenticated:
+                queryset = queryset.none()
+            elif role == "participant":
+                queryset = queryset.filter(team__teammember__user=request.user).distinct()
+            elif role == "jury":
+                queryset = queryset.filter(tournamentjury__user=request.user).distinct()
+            elif role == "admin":
+                queryset = queryset.filter(tournamentadmin__user=request.user).distinct()
+
+        serializer = TournamentSerializer(queryset, many=True)
+        return Response(serializer.data)
+
+
+class ArchivedTournamentListView(APIView):
+    permission_classes = [AllowAny]
+
+    @extend_schema(
+        summary="Список архівних турнірів",
+        description="Отримання списку всіх архівних турнірів. Можна фільтрувати за назвою та роллю.",
+        parameters=[
+            OpenApiParameter(name="name", description="Пошук по назві", required=False, type=str),
+            OpenApiParameter(
+                name="role",
+                description="Фільтр по ролі (participant, jury, admin, all)",
+                required=False,
+                type=str,
+            ),
+        ],
+        responses={200: TournamentSerializer(many=True)},
+    )
+    def get(self, request):
+        queryset = Tournament.objects.filter(status=Tournament.Status.ARCHIVED)
+
+        name = request.query_params.get("name")
+        if name:
+            queryset = queryset.filter(title__icontains=name)
 
         role = request.query_params.get("role")
         if role and role != "all":
