@@ -21,6 +21,80 @@ from ..serializers import (
 )
 
 
+def get_tournament_leaderboard_data(tournament):
+    """
+    Calculates the leaderboard data for a given tournament.
+    Returns a sorted list of team stats.
+    """
+    evaluated_rounds = (
+        Round.objects.filter(tournament=tournament, status=Round.Status.EVALUATED)
+        .prefetch_related("evaluationcriterion_set")
+        .order_by("orderIndex")
+    )
+
+    teams = Team.objects.filter(
+        tournament=tournament,
+    ).exclude(status__in=[Team.Status.DISQUALIFIED, Team.Status.ARCHIVED])
+
+    eval_round_ids = [r.id for r in evaluated_rounds]
+
+    submissions = Submission.objects.filter(round_id__in=eval_round_ids, team__in=teams).prefetch_related(
+        "evaluation_set",
+        "evaluation_set__criterionevaluation_set",
+        "evaluation_set__criterionevaluation_set__criterion",
+    )
+
+    team_stats = {}
+    for team in teams:
+        team_stats[team.id] = {"team_id": team.id, "team_name": team.name, "total_score": 0.0, "rounds": []}
+        for round_obj in evaluated_rounds:
+            max_score = sum(c.max_score * c.weight for c in round_obj.evaluationcriterion_set.all())
+            team_stats[team.id]["rounds"].append(
+                {
+                    "round_id": round_obj.id,
+                    "round_title": round_obj.title,
+                    "teamRoundScore": 0.0,
+                    "roundMaxScore": max_score,
+                }
+            )
+
+    for sub in submissions:
+        t_id = sub.team_id
+        r_id = sub.round_id
+
+        if t_id not in team_stats:
+            continue
+
+        r_data = next((r for r in team_stats[t_id]["rounds"] if r["round_id"] == r_id), None)
+        if not r_data:
+            continue
+
+        crit_evals = {}
+        for eval_obj in sub.evaluation_set.all():
+            if eval_obj.status == "SB":
+                for ce in eval_obj.criterionevaluation_set.all():
+                    crit = ce.criterion
+                    if crit.id not in crit_evals:
+                        crit_evals[crit.id] = {"weight": crit.weight, "scores": []}
+                    crit_evals[crit.id]["scores"].append(ce.score)
+
+        for _c_id, c_data in crit_evals.items():
+            if not c_data["scores"]:
+                continue
+
+            avg_score = sum(c_data["scores"]) / len(c_data["scores"])
+            final_score = avg_score * c_data["weight"]
+            r_data["teamRoundScore"] += final_score
+
+        r_data["teamRoundScore"] = round(r_data["teamRoundScore"], 2)
+        team_stats[t_id]["total_score"] += r_data["teamRoundScore"]
+        team_stats[t_id]["total_score"] = round(team_stats[t_id]["total_score"], 2)
+
+    leaderboard_data = list(team_stats.values())
+    leaderboard_data.sort(key=lambda x: x["total_score"], reverse=True)
+    return leaderboard_data
+
+
 class TournamentListView(APIView):
     permission_classes = [AllowAny]
 
@@ -184,73 +258,7 @@ class TournamentLeaderboardView(APIView):
                 status=status.HTTP_403_FORBIDDEN,
             )
 
-        evaluated_rounds = (
-            Round.objects.filter(tournament=tournament, status=Round.Status.EVALUATED)
-            .prefetch_related("evaluationcriterion_set")
-            .order_by("orderIndex")
-        )
-
-        teams = Team.objects.filter(
-            tournament=tournament,
-        ).exclude(status__in=[Team.Status.DISQUALIFIED, Team.Status.ARCHIVED])
-
-        eval_round_ids = [r.id for r in evaluated_rounds]
-
-        submissions = Submission.objects.filter(round_id__in=eval_round_ids, team__in=teams).prefetch_related(
-            "evaluation_set",
-            "evaluation_set__criterionevaluation_set",
-            "evaluation_set__criterionevaluation_set__criterion",
-        )
-
-        team_stats = {}
-        for team in teams:
-            team_stats[team.id] = {"team_id": team.id, "team_name": team.name, "total_score": 0.0, "rounds": []}
-            for round_obj in evaluated_rounds:
-                max_score = sum(c.max_score * c.weight for c in round_obj.evaluationcriterion_set.all())
-                team_stats[team.id]["rounds"].append(
-                    {
-                        "round_id": round_obj.id,
-                        "round_title": round_obj.title,
-                        "teamRoundScore": 0.0,
-                        "roundMaxScore": max_score,
-                    }
-                )
-
-        for sub in submissions:
-            t_id = sub.team_id
-            r_id = sub.round_id
-
-            if t_id not in team_stats:
-                continue
-
-            r_data = next((r for r in team_stats[t_id]["rounds"] if r["round_id"] == r_id), None)
-            if not r_data:
-                continue
-
-            crit_evals = {}
-            for eval_obj in sub.evaluation_set.all():
-                if eval_obj.status == "SB":
-                    for ce in eval_obj.criterionevaluation_set.all():
-                        crit = ce.criterion
-                        if crit.id not in crit_evals:
-                            crit_evals[crit.id] = {"weight": crit.weight, "scores": []}
-                        crit_evals[crit.id]["scores"].append(ce.score)
-
-            for _c_id, c_data in crit_evals.items():
-                if not c_data["scores"]:
-                    continue
-
-                avg_score = sum(c_data["scores"]) / len(c_data["scores"])
-                final_score = avg_score * c_data["weight"]
-                r_data["teamRoundScore"] += final_score
-
-            r_data["teamRoundScore"] = round(r_data["teamRoundScore"], 2)
-            team_stats[t_id]["total_score"] += r_data["teamRoundScore"]
-            team_stats[t_id]["total_score"] = round(team_stats[t_id]["total_score"], 2)
-
-        leaderboard_data = list(team_stats.values())
-        leaderboard_data.sort(key=lambda x: x["total_score"], reverse=True)
-
+        leaderboard_data = get_tournament_leaderboard_data(tournament)
         serializer = LeaderboardItemSerializer(leaderboard_data, many=True)
         return Response(serializer.data)
 
@@ -391,3 +399,45 @@ class TournamentTeamLeaderboardDetailView(APIView):
 
         serializer = LeaderboardTeamRoundSerializer(rounds_data, many=True)
         return Response(serializer.data)
+
+
+class TournamentTeamRankView(APIView):
+    permission_classes = [AllowAny]
+
+    @extend_schema(
+        summary="Місце команди в лідерборді",
+        description="Отримання поточного місця конкретної команди в загальному заліку турніру.",
+        responses={
+            200: OpenApiResponse(
+                description="Ранг команди",
+                response=dict,
+                examples=[OpenApiExample("Rank Info", value={"rank": 1, "total_teams": 10})],
+            ),
+            404: OpenApiResponse(description="Турнір або команду не знайдено"),
+        },
+        operation_id="tournament_team_rank",
+    )
+    def get(self, request, tournament_id, team_id):
+        try:
+            tournament = Tournament.objects.get(id=tournament_id)
+        except Tournament.DoesNotExist:
+            return Response({"error": "Турнір не знайдено"}, status=status.HTTP_404_NOT_FOUND)
+
+        if not tournament.is_team_visible:
+            return Response(
+                {"error": "Перегляд команд заборонено"},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
+        leaderboard_data = get_tournament_leaderboard_data(tournament)
+
+        team_rank = None
+        for index, item in enumerate(leaderboard_data):
+            if item["team_id"] == team_id:
+                team_rank = index + 1
+                break
+
+        if team_rank is None:
+            return Response({"error": "Команду не знайдено в лідерборді"}, status=status.HTTP_404_NOT_FOUND)
+
+        return Response({"rank": team_rank, "total_teams": len(leaderboard_data)})
