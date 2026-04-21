@@ -37,6 +37,14 @@ class TeamListView(APIView):
         serializer = TeamSerializer(data=request.data)
         if serializer.is_valid():
             tournament = serializer.validated_data["tournament"]
+            name = serializer.validated_data["name"]
+
+            if Team.objects.filter(tournament=tournament, name=name).exists():
+                return Response(
+                    {"detail": f"Команда з назвою '{name}' вже існує в цьому турнірі."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
             if tournament.status != Tournament.Status.REGISTRATION:
                 return Response(
                     {"detail": "Реєстрація команд в цей турнір зараз закрита."}, status=status.HTTP_400_BAD_REQUEST
