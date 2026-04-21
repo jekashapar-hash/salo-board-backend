@@ -366,6 +366,7 @@ class TournamentTeamLeaderboardDetailView(APIView):
                                 "category": crit.category,
                                 "title": crit.title,
                                 "weight": crit.weight,
+                                "max_score": crit.max_score,
                                 "scores": [],
                             }
                         crit_evals[crit.id]["scores"].append(ce.score)
@@ -383,6 +384,8 @@ class TournamentTeamLeaderboardDetailView(APIView):
                         "category": c_data["category"],
                         "title": c_data["title"],
                         "score": round(final_score, 2),
+                        "max_score": c_data["max_score"],
+                        "weight": c_data["weight"],
                     }
                 )
 

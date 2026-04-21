@@ -293,6 +293,8 @@ class LeaderboardCriterionSerializer(serializers.Serializer):
     category = serializers.CharField()
     title = serializers.CharField()
     score = serializers.FloatField()
+    max_score = serializers.IntegerField()
+    weight = serializers.IntegerField()
 
 
 class LeaderboardTeamRoundSerializer(serializers.Serializer):
