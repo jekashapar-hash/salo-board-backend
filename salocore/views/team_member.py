@@ -106,6 +106,18 @@ class TeamParticipantListCreateView(APIView):
                 status=status.HTTP_404_NOT_FOUND,
             )
 
+        is_already_in_tournament = (
+            TeamMember.objects.filter(team__tournament=team.tournament, user=target_user)
+            .exclude(team__status__in=[Team.Status.ARCHIVED, Team.Status.DISQUALIFIED])
+            .exists()
+        )
+
+        if is_already_in_tournament:
+            return Response(
+                {"error": "Користувач вже бере участь у цьому турнірі."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
         Notification.objects.create(
             user=target_user,
             title=f"Запрошення в команду {team.name}",
