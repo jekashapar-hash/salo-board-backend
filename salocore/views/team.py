@@ -49,6 +49,19 @@ class TeamListView(APIView):
                 return Response(
                     {"detail": "Реєстрація команд в цей турнір зараз закрита."}, status=status.HTTP_400_BAD_REQUEST
                 )
+
+            if tournament.max_team > 0:
+                active_teams_count = (
+                    Team.objects.filter(tournament=tournament)
+                    .exclude(status__in=[Team.Status.ARCHIVED, Team.Status.DISQUALIFIED])
+                    .count()
+                )
+                if active_teams_count >= tournament.max_team:
+                    return Response(
+                        {"detail": "Досягнуто максимальну кількість команд у цьому турнірі."},
+                        status=status.HTTP_400_BAD_REQUEST,
+                    )
+
             team = serializer.save(status=Team.Status.REGISTRATED)
             TeamMember.objects.create(team=team, user=request.user, is_captain=True)
             return Response(serializer.data, status=status.HTTP_201_CREATED)
