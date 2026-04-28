@@ -4,6 +4,8 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from salocore.use_cases.round_cheker.deps import get_round_cheker
+from salocore.use_cases.tournament_cheker.deps import get_tournament_cheker
 from ..models import (
     EvaluationCriterion,
     Round,
@@ -17,7 +19,6 @@ from ..serializers import (
     RoundRequirementSerializer,
     RoundSerializer,
 )
-from ..utils import check_and_update_round_deadlines, check_tournament_deadlines
 
 
 class RoundListView(APIView):
@@ -42,7 +43,7 @@ class RoundListView(APIView):
         except Tournament.DoesNotExist:
             return Response(status=status.HTTP_404_NOT_FOUND)
 
-        check_tournament_deadlines(tournament)
+        get_tournament_cheker().check()
 
         rounds = Round.objects.filter(tournament=tournament)
 
@@ -67,7 +68,7 @@ class RoundDetailView(APIView):
         except Round.DoesNotExist:
             return Response(status=status.HTTP_404_NOT_FOUND)
 
-        check_and_update_round_deadlines(round_obj)
+        get_round_cheker().check()
 
         if round_obj.status == Round.Status.DRAFT and round_obj.tournament.creator != request.user:
             return Response({"error": "Чернетки недоступні"}, status=status.HTTP_403_FORBIDDEN)
