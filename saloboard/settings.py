@@ -57,6 +57,7 @@ INSTALLED_APPS = [
     "rest_framework_simplejwt",
     "rest_framework_simplejwt.token_blacklist",
     "channels",
+    "django_celery_beat",
     "salocore",
 ]
 
@@ -195,3 +196,47 @@ if REDIS_URL:
     }
 else:
     CHANNEL_LAYERS = {"default": {"BACKEND": "channels.layers.InMemoryChannelLayer"}}
+
+
+# ---------------------------------------------------------------------------
+# Celery
+# ---------------------------------------------------------------------------
+
+# Брокер: Redis (тот же инстанс, что и для Channels; база 1, чтобы не мешать)
+CELERY_BROKER_URL = os.getenv("CELERY_BROKER_URL", "redis://localhost:6379/1")
+CELERY_RESULT_BACKEND = os.getenv("CELERY_RESULT_BACKEND", "redis://localhost:6379/1")
+
+# Часовой пояс совпадает с Django
+CELERY_TIMEZONE = TIME_ZONE
+CELERY_ENABLE_UTC = True
+
+# Сериализация
+CELERY_TASK_SERIALIZER = "json"
+CELERY_RESULT_SERIALIZER = "json"
+CELERY_ACCEPT_CONTENT = ["json"]
+
+# Хранить результаты не более 1 часа (задачи не возвращают данных, экономим память)
+CELERY_RESULT_EXPIRES = 3600
+
+# ---------------------------------------------------------------------------
+# Celery Beat — расписание периодических задач
+# ---------------------------------------------------------------------------
+
+# Интервал проверки в минутах (переменная CHECKER_INTERVAL_MINUTES в .env)
+_CHECKER_INTERVAL_MINUTES: int = int(os.getenv("CHECKER_INTERVAL_MINUTES", "15"))
+
+# Используем django_celery_beat для хранения расписания в БД
+CELERY_BEAT_SCHEDULER = "django_celery_beat.schedulers:DatabaseScheduler"
+
+CELERY_BEAT_SCHEDULE = {
+    # Проверка статусов раундов
+    "run-round-checker": {
+        "task": "salocore.tasks.run_round_checker",
+        "schedule": timedelta(minutes=_CHECKER_INTERVAL_MINUTES),
+    },
+    # Проверка статусов турниров
+    "run-tournament-checker": {
+        "task": "salocore.tasks.run_tournament_checker",
+        "schedule": timedelta(minutes=_CHECKER_INTERVAL_MINUTES),
+    },
+}
