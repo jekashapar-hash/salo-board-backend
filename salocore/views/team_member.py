@@ -1,4 +1,3 @@
-
 from django.db import transaction
 from drf_spectacular.utils import (
     OpenApiExample,

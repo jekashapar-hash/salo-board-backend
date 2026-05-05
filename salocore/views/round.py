@@ -6,6 +6,7 @@ from rest_framework.views import APIView
 
 from salocore.use_cases.round_cheker.deps import get_round_cheker
 from salocore.use_cases.tournament_cheker.deps import get_tournament_cheker
+
 from ..models import (
     EvaluationCriterion,
     Round,

@@ -32,6 +32,7 @@ def run_round_checker(self) -> None:  # type: ignore[override]
       - закрытие приёма работ (CLOSE_SUBMISSIONS)
       - закрытие оценивания (CLOSE_EVALUATIONS)
     """
+    print("run_round_checker")
     try:
         checker = RoundCheker(
             start_round_service=get_round_start(),
@@ -54,6 +55,7 @@ def run_tournament_checker(self) -> None:  # type: ignore[override]
       - завершение турнира (FINISH)
       - архивация турнира (ARCHIVE)
     """
+    print("run_tournament_checker")
     try:
         checker = TournamentCheker(
             start_registration_service=get_tournament_start_registration(),

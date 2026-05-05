@@ -21,12 +21,6 @@ class RoundCheker(RoundChekerProtocol):
         self._notification_service = notification_service
 
     def check(self) -> None:
-        self._start_round_service.check_status(
-            on_notify=self._notification_service.start_round
-        )
-        self._close_submissions_service.check_status(
-            on_notify=self._distribution_service.distribute
-        )
-        self._close_evaluations_service.check_status(
-            on_notify=self._notification_service.finish_evaluation
-        )
+        self._start_round_service.check_status(on_notify=self._notification_service.start_round)
+        self._close_submissions_service.check_status(on_notify=self._distribution_service.distribute)
+        self._close_evaluations_service.check_status(on_notify=self._notification_service.finish_evaluation)
