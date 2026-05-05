@@ -5,6 +5,8 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from salocore.use_cases.round_cheker.deps import get_round_cheker
+
 from ..models import (
     CriterionEvaluation,
     Evaluation,
@@ -90,6 +92,8 @@ class EvaluationDetailView(APIView):
         serializer = EvaluationSerializer(evaluation, data=request.data, partial=True)
         if serializer.is_valid():
             serializer.save()
+            if new_status == Evaluation.Status.SUBMITTED:
+                get_round_cheker().check()
             return Response(serializer.data)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 

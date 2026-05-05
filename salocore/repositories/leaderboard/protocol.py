@@ -1,0 +1,13 @@
+from typing import Protocol
+
+from salocore.models import Round, Submission, Team
+
+
+class LeaderboardRepositoryProtocol(Protocol):
+    def get_evaluated_rounds(self, tournament) -> list[Round]: ...
+
+    def get_active_teams(self, tournament) -> list[Team]: ...
+
+    def get_submissions_for_rounds(self, round_ids: list[int], teams: list[Team]) -> list[Submission]: ...
+
+    def get_team_submissions_for_rounds(self, round_ids: list[int], team: Team) -> list[Submission]: ...

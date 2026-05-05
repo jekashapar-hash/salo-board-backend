@@ -24,9 +24,16 @@ class Notification(models.Model):
     class Type(models.TextChoices):
         JURY_INVITE = "JI", "Jury Invite"
         TEAM_INVITE = "TI", "Team Invite"
+        ADMIN_INVITE = "AI", "Admin Invite"
         KICKED_FROM_TEAM = "KT", "Kicked from Team"
-        TOURNAMENT_STARTED = "TS", "Tournament Started"
+        KICKED_FROM_JURY = "KJ", "Kicked from Jury"
+        KICKED_FROM_ADMIN = "KA", "Kicked from Admin"
+        TOURNAMENT_REG_START = "TRS", "Tournament reg start"
+        TOURNAMENT_REG_END = "TRE", "Tournament reg end"
+        TOURNAMENT_FINISHED = "TF", "Tournament finished"
+        ROUND_STARTED = "RS", "Round started"
         SUBMISSION_DEADLINE_SOON = "SD", "Submission Deadline Soon"
+        SUBMISSION_FINISHED = "SF", "Submission finished"
         EVALUATION_FINISHED = "EF", "Evaluation Finished"
 
     class Status(models.TextChoices):

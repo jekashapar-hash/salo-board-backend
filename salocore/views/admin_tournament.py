@@ -8,6 +8,8 @@ from rest_framework.permissions import IsAdminUser
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from salocore.use_cases.tournament_cheker.deps import get_tournament_cheker
+
 from ..models import Tournament, TournamentAdmin, TournamentJury
 from ..permissions import IsTournamentCreator, IsTournamentCreatorOrReadOnly
 from ..serializers import (
@@ -79,6 +81,7 @@ class AdminTournamentDetailView(APIView):
         serializer = TournamentDetailSerializer(tournament, data=request.data, partial=True)
         if serializer.is_valid():
             serializer.save()
+            get_tournament_cheker().check()
             return Response(serializer.data)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -129,6 +132,7 @@ class AdminTournamentStartView(APIView):
 
         tournament.status = Tournament.Status.REGISTRATION
         tournament.save()
+        get_tournament_cheker().check()
         serializer = TournamentSerializer(tournament)
         return Response(serializer.data)
 

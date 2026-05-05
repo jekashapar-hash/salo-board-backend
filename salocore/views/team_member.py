@@ -1,7 +1,4 @@
-from datetime import timedelta
-
 from django.db import transaction
-from django.utils import timezone
 from drf_spectacular.utils import (
     OpenApiExample,
     OpenApiParameter,
@@ -13,9 +10,10 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from ..models import Notification, Team, TeamMember, Tournament, User
+from salocore.services.notification.deps import get_notification_service
+
+from ..models import Team, TeamMember, Tournament, User
 from ..serializers import TeamMemberSerializer
-from ..utils import check_tournament_deadlines
 
 
 class TeamParticipantListCreateView(APIView):
@@ -82,7 +80,6 @@ class TeamParticipantListCreateView(APIView):
         if not is_captain:
             return Response({"error": "Ви не капітан."}, status=status.HTTP_403_FORBIDDEN)
 
-        check_tournament_deadlines(team.tournament)
         if team.tournament.status != Tournament.Status.REGISTRATION:
             return Response({"error": "Реєстрація не йде."}, status=status.HTTP_400_BAD_REQUEST)
 
@@ -118,15 +115,7 @@ class TeamParticipantListCreateView(APIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        Notification.objects.create(
-            user=target_user,
-            title=f"Запрошення в команду {team.name}",
-            message=f"Вас запросили в команду {team.name} на турнірі {team.tournament.title}.",
-            type=Notification.Type.TEAM_INVITE,
-            action_type=Notification.ActionType.YES_NO,
-            action_url=f"/tournaments/{team.tournament.id}?team_id={team.id}",
-            how_long_active=timezone.now() + timedelta(days=3),
-        )
+        get_notification_service().team_invite(team, target_user.id)
         return Response({"status": "Запрошення надіслано."}, status=status.HTTP_201_CREATED)
 
 
@@ -171,7 +160,6 @@ class TeamParticipantDetailView(APIView):
         except Team.DoesNotExist:
             return Response(status=status.HTTP_404_NOT_FOUND)
 
-        check_tournament_deadlines(team.tournament)
         reg_finished = team.tournament.status != Tournament.Status.REGISTRATION
 
         try:

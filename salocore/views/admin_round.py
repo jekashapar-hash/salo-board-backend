@@ -7,6 +7,8 @@ from rest_framework.permissions import IsAdminUser
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from salocore.use_cases.round_cheker.deps import get_round_cheker
+
 from ..models import EvaluationCriterion, Round, RoundAttachment, RoundRequirement, Tournament
 from ..permissions import IsTournamentCreator, IsTournamentCreatorOrReadOnly
 from ..serializers import (
@@ -79,6 +81,7 @@ class AdminRoundDetailView(APIView):
         serializer = RoundSerializer(round_inst, data=request.data, partial=True)
         if serializer.is_valid():
             serializer.save()
+            get_round_cheker().check()
             return Response(serializer.data)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -149,6 +152,7 @@ class AdminRoundStartView(APIView):
 
         round_inst.status = Round.Status.ACTIVE
         round_inst.save()
+        get_round_cheker().check()
         serializer = RoundSerializer(round_inst)
         return Response(serializer.data)
 
