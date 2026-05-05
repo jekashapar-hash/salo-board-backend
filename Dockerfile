@@ -45,7 +45,14 @@ ENV PATH="/app/.venv/bin:$PATH"
 # Копіюємо весь код додатку
 COPY . /app/
 
+# Копіюємо скрипт входу
+COPY scripts/entrypoint.sh /app/scripts/entrypoint.sh
+RUN chmod +x /app/scripts/entrypoint.sh
+
 EXPOSE 8000
 
-# За замовчуванням запускаємо dev сервер (у production використовуйте gunicorn)
+# Використовуємо entrypoint для виконання міграцій перед запуском
+ENTRYPOINT ["/app/scripts/entrypoint.sh"]
+
+# За замовчуванням запускаємо dev сервер
 CMD ["python", "manage.py", "runserver", "0.0.0.0:8000"]
