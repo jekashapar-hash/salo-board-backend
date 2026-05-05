@@ -16,7 +16,7 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
     ports:
-      - "5432:5432"
+      - "5435:5432"
     restart: always
 
   web:
@@ -33,7 +33,7 @@ services:
       - CELERY_BROKER_URL=redis://redis:6379/1
       - CELERY_RESULT_BACKEND=redis://redis:6379/1
       - REDIS_URL=redis://redis:6379/0
-      - DATABASE_URL=postgres://${POSTGRES_USER:-salouser}:${POSTGRES_PASSWORD:-salopass}@db:5432/${POSTGRES_DB:-saloboard}
+      - DATABASE_URL=postgres://${POSTGRES_USER:-salouser}:${POSTGRES_PASSWORD:-salopass}@db:5435/${POSTGRES_DB:-saloboard}
       - IS_DEV_DATABASE=False
     depends_on:
       - redis
