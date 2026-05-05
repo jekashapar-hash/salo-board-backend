@@ -6,6 +6,19 @@ services:
       - "6379:6379"
     restart: always
 
+  db:
+    image: postgres:16-alpine
+    container_name: saloboard_db
+    environment:
+      - POSTGRES_DB=${POSTGRES_DB:-saloboard}
+      - POSTGRES_USER=${POSTGRES_USER:-salouser}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-salopass}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    restart: always
+
   web:
     build: .
     container_name: saloboard_web
@@ -13,15 +26,18 @@ services:
       - "8000:8000"
     volumes:
       - .:/app
-      - db_data:/app/db
+      - sqlite_data:/app/db
     env_file:
       - .env
     environment:
       - CELERY_BROKER_URL=redis://redis:6379/1
       - CELERY_RESULT_BACKEND=redis://redis:6379/1
       - REDIS_URL=redis://redis:6379/0
+      - DATABASE_URL=postgres://${POSTGRES_USER:-salouser}:${POSTGRES_PASSWORD:-salopass}@db:5432/${POSTGRES_DB:-saloboard}
+      - IS_DEV_DATABASE=False
     depends_on:
       - redis
+      - db
     restart: always
 
   celery_worker:
@@ -30,15 +46,18 @@ services:
     command: celery -A saloboard worker -l info
     volumes:
       - .:/app
-      - db_data:/app/db
+      - sqlite_data:/app/db
     env_file:
       - .env
     environment:
       - CELERY_BROKER_URL=redis://redis:6379/1
       - CELERY_RESULT_BACKEND=redis://redis:6379/1
       - REDIS_URL=redis://redis:6379/0
+      - DATABASE_URL=postgres://${POSTGRES_USER:-salouser}:${POSTGRES_PASSWORD:-salopass}@db:5432/${POSTGRES_DB:-saloboard}
+      - IS_DEV_DATABASE=False
     depends_on:
       - redis
+      - db
     restart: always
 
   celery_beat:
@@ -47,16 +66,20 @@ services:
     command: celery -A saloboard beat -l info
     volumes:
       - .:/app
-      - db_data:/app/db
+      - sqlite_data:/app/db
     env_file:
       - .env
     environment:
       - CELERY_BROKER_URL=redis://redis:6379/1
       - CELERY_RESULT_BACKEND=redis://redis:6379/1
       - REDIS_URL=redis://redis:6379/0
+      - DATABASE_URL=postgres://${POSTGRES_USER:-salouser}:${POSTGRES_PASSWORD:-salopass}@db:5432/${POSTGRES_DB:-saloboard}
+      - IS_DEV_DATABASE=False
     depends_on:
       - redis
+      - db
     restart: always
 
 volumes:
-  db_data:
+  sqlite_data:
+  postgres_data:
