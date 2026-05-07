@@ -309,8 +309,8 @@ class LeaderboardTeamRoundSerializer(serializers.Serializer):
 class RoundSerializer(serializers.ModelSerializer):
     class Meta:
         model = Round
-        fields = "__all__"
-        read_only_fields = ("id", "tournament", "created_at", "updated_at")
+        exclude = ("created_at", "updated_at")
+        read_only_fields = ("id", "tournament")
 
     def validate(self, attrs):
         start_at = attrs.get("start_at", getattr(self.instance, "start_at", None))

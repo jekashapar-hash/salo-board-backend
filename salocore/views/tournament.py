@@ -1,3 +1,4 @@
+from django.db.models import Q
 from drf_spectacular.utils import (
     OpenApiExample,
     OpenApiParameter,
@@ -65,7 +66,7 @@ class TournamentListView(APIView):
             elif role == "jury":
                 queryset = queryset.filter(tournamentjury__user=request.user).distinct()
             elif role == "admin":
-                queryset = queryset.filter(tournamentadmin__user=request.user).distinct()
+                queryset = queryset.filter(Q(tournamentadmin__user=request.user) | Q(creator=request.user)).distinct()
 
         serializer = TournamentSerializer(queryset, many=True)
         return Response(serializer.data)
@@ -104,7 +105,7 @@ class ArchivedTournamentListView(APIView):
             elif role == "jury":
                 queryset = queryset.filter(tournamentjury__user=request.user).distinct()
             elif role == "admin":
-                queryset = queryset.filter(tournamentadmin__user=request.user).distinct()
+                queryset = queryset.filter(Q(tournamentadmin__user=request.user) | Q(creator=request.user)).distinct()
 
         serializer = TournamentSerializer(queryset, many=True)
         return Response(serializer.data)

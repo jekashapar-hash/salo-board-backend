@@ -1,4 +1,5 @@
 from django.contrib.auth import get_user_model
+from django.db.models import Q
 from django.shortcuts import get_object_or_404
 from drf_spectacular.utils import (
     extend_schema,
@@ -31,7 +32,12 @@ class AdminTournamentListView(APIView):
         responses={200: TournamentSerializer(many=True)},
     )
     def get(self, request):
-        queryset = Tournament.objects.all()
+        if request.user.is_superuser:
+            queryset = Tournament.objects.all()
+        else:
+            queryset = Tournament.objects.filter(
+                Q(creator=request.user) | Q(tournamentadmin__user=request.user)
+            ).distinct()
         serializer = TournamentSerializer(queryset, many=True)
         return Response(serializer.data)
 
