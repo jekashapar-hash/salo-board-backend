@@ -76,7 +76,7 @@ class UserRolesView(APIView):
     def get(self, request):
         user = request.user
 
-        is_admin = user.is_staff or getattr(user, "is_admin", False)
+        is_admin = user.is_staff
 
         active_statuses = [Tournament.Status.REGISTRATION, Tournament.Status.RUNNING]
 
