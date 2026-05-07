@@ -14,6 +14,7 @@ import os
 from datetime import timedelta
 from pathlib import Path
 
+import dj_database_url
 from dotenv import load_dotenv
 
 # Завантажуємо змінні з файлу .env
@@ -93,8 +94,6 @@ WSGI_APPLICATION = "saloboard.wsgi.application"
 
 # Database
 # https://docs.djangoproject.com/en/6.0/ref/settings/#databases
-
-import dj_database_url
 
 IS_DEV_DATABASE = os.getenv("IS_DEV_DATABASE", "True") == "True"
 
