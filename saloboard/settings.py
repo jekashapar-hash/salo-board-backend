@@ -188,6 +188,7 @@ SPECTACULAR_SETTINGS = {
         "NotificationStatusEnum": "salocore.models.Notification.Status",
         "SubmissionStatusEnum": "salocore.models.Submission.Status",
         "EvaluationStatusEnum": "salocore.models.Evaluation.Status",
+        "RoundStatusEnum": "salocore.models.Round.Status",
     },
     "POSTPROCESSING_HOOKS": [
         "drf_spectacular.hooks.postprocess_schema_enums",

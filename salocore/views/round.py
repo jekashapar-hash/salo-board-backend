@@ -19,6 +19,7 @@ from ..serializers import (
     RoundAttachmentSerializer,
     RoundRequirementSerializer,
     RoundSerializer,
+    RoundShortSerializer,
 )
 
 
@@ -36,7 +37,7 @@ class RoundListView(APIView):
                 type=str,
             )
         ],
-        responses=RoundSerializer(many=True),
+        responses=RoundShortSerializer(many=True),
     )
     def get(self, request, tournament_id):
         try:
@@ -55,7 +56,7 @@ class RoundListView(APIView):
         if tournament.creator != request.user:
             rounds = rounds.exclude(status=Round.Status.DRAFT)
 
-        serializer = RoundSerializer(rounds, many=True)
+        serializer = RoundShortSerializer(rounds, many=True)
         return Response(serializer.data)
 
 

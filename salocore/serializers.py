@@ -252,6 +252,8 @@ class TeamSerializer(serializers.ModelSerializer):
 class TeamMemberSerializer(serializers.ModelSerializer):
     user_email = serializers.EmailField(source="user.email", read_only=True)
     user_username = serializers.CharField(source="user.username", read_only=True)
+    user_first_name = serializers.CharField(source="user.first_name", read_only=True)
+    user_last_name = serializers.CharField(source="user.last_name", read_only=True)
 
     class Meta:
         model = TeamMember
@@ -261,6 +263,8 @@ class TeamMemberSerializer(serializers.ModelSerializer):
             "user",
             "user_email",
             "user_username",
+            "user_first_name",
+            "user_last_name",
             "is_captain",
             "created_at",
         ]
@@ -309,7 +313,7 @@ class LeaderboardTeamRoundSerializer(serializers.Serializer):
 class RoundSerializer(serializers.ModelSerializer):
     class Meta:
         model = Round
-        exclude = ("created_at", "updated_at")
+        fields = "__all__"
         read_only_fields = ("id", "tournament")
 
     def validate(self, attrs):
@@ -320,6 +324,13 @@ class RoundSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError({"deadline": "Дедлайн раунду має бути після його початку або одночасно."})
 
         return attrs
+
+
+class RoundShortSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Round
+        exclude = ("description", "created_at", "updated_at")
+        read_only_fields = ("id", "tournament")
 
 
 class EvaluationCriterionSerializer(serializers.ModelSerializer):
