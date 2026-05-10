@@ -143,6 +143,28 @@ class UserRolesSerializer(serializers.Serializer):
     admin = serializers.BooleanField(help_text="Користувач є персоналом (staff)")
 
 
+class UserTournamentHistoryItemSerializer(serializers.Serializer):
+    """Один запис в історії участі користувача у турнірі."""
+
+    id = serializers.IntegerField(help_text="ID турніру")
+    title = serializers.CharField(help_text="Назва турніру")
+    status = serializers.CharField(help_text="Статус турніру")
+    start_date = serializers.DateTimeField(help_text="Дата початку")
+    ended_at = serializers.DateTimeField(help_text="Дата завершення")
+    role = serializers.ChoiceField(
+        choices=["participant", "jury", "admin"],
+        help_text="Роль користувача у цьому турнірі",
+    )
+    team_id = serializers.IntegerField(
+        allow_null=True,
+        help_text="ID команди (тільки для ролі participant)",
+    )
+    team_name = serializers.CharField(
+        allow_null=True,
+        help_text="Назва команди (тільки для ролі participant)",
+    )
+
+
 class TournamentSerializer(serializers.ModelSerializer):
     class Meta:
         model = Tournament
@@ -378,6 +400,30 @@ class SubmissionSerializer(serializers.ModelSerializer):
             "submitted_at",
         ]
         read_only_fields = ("id", "created_at", "submitted_at", "team")
+
+
+class UserSubmissionSerializer(serializers.Serializer):
+    """Сабміт з повним контекстом (турнір, раунд, команда) для особистого кабінету."""
+
+    id = serializers.IntegerField(help_text="ID сабміту")
+    status = serializers.CharField(help_text="Статус сабміту (DR/SB/LK)")
+    github_url = serializers.CharField(help_text="Посилання на GitHub")
+    video_url = serializers.CharField(help_text="Посилання на відео")
+    demo_url = serializers.CharField(help_text="Посилання на демо")
+    description = serializers.CharField(help_text="Опис рішення")
+    created_at = serializers.DateTimeField(help_text="Дата створення")
+    submitted_at = serializers.DateTimeField(allow_null=True, help_text="Дата подачі")
+    # Команда
+    team_id = serializers.IntegerField(help_text="ID команди")
+    team_name = serializers.CharField(help_text="Назва команди")
+    # Раунд
+    round_id = serializers.IntegerField(help_text="ID раунду")
+    round_title = serializers.CharField(help_text="Назва раунду")
+    round_deadline = serializers.DateTimeField(help_text="Дедлайн раунду")
+    # Турнір
+    tournament_id = serializers.IntegerField(help_text="ID турніру")
+    tournament_title = serializers.CharField(help_text="Назва турніру")
+    tournament_status = serializers.CharField(help_text="Статус турніру")
 
 
 class EvaluationSerializer(serializers.ModelSerializer):

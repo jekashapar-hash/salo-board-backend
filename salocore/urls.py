@@ -166,6 +166,16 @@ urlpatterns = [
         UserRolesView.as_view(),
         name="user-roles",
     ),
+    path(
+        "user/tournament-history",
+        UserTournamentHistoryView.as_view(),
+        name="user-tournament-history",
+    ),
+    path(
+        "user/submissions",
+        UserSubmissionsView.as_view(),
+        name="user-submissions",
+    ),
     path("chats", ChatListCreateView.as_view()),
     path("chats/<int:chat_id>", ChatDetailView.as_view()),
     path("chats/<int:chat_id>/messages", ChatMessageListView.as_view()),

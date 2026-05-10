@@ -4,8 +4,14 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from ..models import TeamMember, Tournament, TournamentJury
-from ..serializers import UserNameSerializer, UserProfileSerializer, UserRolesSerializer
+from ..models import Submission, TeamMember, Tournament, TournamentAdmin, TournamentJury
+from ..serializers import (
+    UserNameSerializer,
+    UserProfileSerializer,
+    UserRolesSerializer,
+    UserSubmissionSerializer,
+    UserTournamentHistoryItemSerializer,
+)
 
 
 class UserProfileView(APIView):
@@ -87,4 +93,137 @@ class UserRolesView(APIView):
         data = {"participant": is_participant, "jury": is_jury, "admin": is_admin}
 
         serializer = UserRolesSerializer(data)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+class UserTournamentHistoryView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    @extend_schema(
+        summary="Історія участі у турнірах",
+        description=(
+            "Повертає список усіх турнірів, у яких поточний користувач брав участь "
+            "як учасник (participant), журі (jury) або адміністратор (admin). "
+            "Якщо в одному турнірі користувач мав кілька ролей — кожна роль "
+            "повертається окремим записом."
+        ),
+        responses={200: UserTournamentHistoryItemSerializer(many=True)},
+        tags=["User"],
+    )
+    def get(self, request):
+        user = request.user
+        history = []
+
+        # ── учасник (через TeamMember) ─────────────────────────────────────
+        member_qs = TeamMember.objects.filter(user=user).select_related("team", "team__tournament")
+        for member in member_qs:
+            t = member.team.tournament
+            history.append(
+                {
+                    "id": t.id,
+                    "title": t.title,
+                    "status": t.status,
+                    "start_date": t.start_date,
+                    "ended_at": t.ended_at,
+                    "role": "participant",
+                    "team_id": member.team.id,
+                    "team_name": member.team.name,
+                }
+            )
+
+        # ── журі ───────────────────────────────────────────────────────────
+        jury_qs = TournamentJury.objects.filter(user=user).select_related("tournament")
+        for jury in jury_qs:
+            t = jury.tournament
+            history.append(
+                {
+                    "id": t.id,
+                    "title": t.title,
+                    "status": t.status,
+                    "start_date": t.start_date,
+                    "ended_at": t.ended_at,
+                    "role": "jury",
+                    "team_id": None,
+                    "team_name": None,
+                }
+            )
+
+        # ── адмін ──────────────────────────────────────────────────────────
+        admin_qs = TournamentAdmin.objects.filter(user=user).select_related("tournament")
+        for adm in admin_qs:
+            t = adm.tournament
+            history.append(
+                {
+                    "id": t.id,
+                    "title": t.title,
+                    "status": t.status,
+                    "start_date": t.start_date,
+                    "ended_at": t.ended_at,
+                    "role": "admin",
+                    "team_id": None,
+                    "team_name": None,
+                }
+            )
+
+        # Сортуємо: спочатку активні (Registration/Running), потім решта — за start_date desc
+        history.sort(
+            key=lambda x: (
+                x["status"] not in (Tournament.Status.REGISTRATION, Tournament.Status.RUNNING),
+                -(x["start_date"].timestamp() if x["start_date"] else 0),
+            )
+        )
+
+        serializer = UserTournamentHistoryItemSerializer(history, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+class UserSubmissionsView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    @extend_schema(
+        summary="Сабміти команд користувача",
+        description=(
+            "Повертає всі сабміти (чернетки та подані) команд, у яких поточний "
+            "користувач є або був учасником. Кожен запис містить повний контекст: "
+            "назву команди, раунд та турнір."
+        ),
+        responses={200: UserSubmissionSerializer(many=True)},
+        tags=["User"],
+    )
+    def get(self, request):
+        # ID команд, у яких є поточний юзер
+        team_ids = TeamMember.objects.filter(user=request.user).values_list("team_id", flat=True)
+
+        submissions = (
+            Submission.objects.filter(team_id__in=team_ids)
+            .select_related("team", "round", "round__tournament")
+            .order_by("-created_at")
+        )
+
+        data = [
+            {
+                "id": s.id,
+                "status": s.status,
+                "github_url": s.github_url,
+                "video_url": s.video_url,
+                "demo_url": s.demo_url,
+                "description": s.description,
+                "created_at": s.created_at,
+                "submitted_at": s.submitted_at,
+                # команда
+                "team_id": s.team.id,
+                "team_name": s.team.name,
+                # раунд
+                "round_id": s.round.id,
+                "round_title": s.round.title,
+                "round_deadline": s.round.deadline,
+                # турнір
+                "tournament_id": s.round.tournament.id,
+                "tournament_title": s.round.tournament.title,
+                "tournament_status": s.round.tournament.status,
+            }
+            for s in submissions
+        ]
+
+        serializer = UserSubmissionSerializer(data, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
