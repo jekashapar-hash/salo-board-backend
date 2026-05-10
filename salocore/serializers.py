@@ -72,6 +72,7 @@ class UserProfileSerializer(serializers.Serializer):
     first_name = serializers.CharField(max_length=150, required=False)
     last_name = serializers.CharField(max_length=150, required=False)
     date_joined = serializers.DateTimeField(read_only=True)
+    invite_code = serializers.CharField(read_only=True)
 
     # UserProfile fields
     city = serializers.CharField(max_length=100, required=False, allow_blank=True)
@@ -87,6 +88,7 @@ class UserProfileSerializer(serializers.Serializer):
             "firstName": instance.first_name,
             "lastName": instance.last_name,
             "dateJoined": instance.date_joined,
+            "inviteCode": instance.invite_code,
             "city": profile.city,
             "organization": profile.organization,
             "telegram": profile.telegram,
