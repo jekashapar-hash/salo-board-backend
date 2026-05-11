@@ -87,6 +87,7 @@ networks:
     internal: true
   public:
     external: true
+    name: coolify
 
 volumes:
   postgres_data:
