@@ -62,7 +62,6 @@ services:
     restart: always
     networks:
       - isolated
-      - public
 
   celery_beat:
     build: .
@@ -87,6 +86,7 @@ networks:
   isolated:
     internal: true
   public:
+    external: true
 
 volumes:
   postgres_data:
