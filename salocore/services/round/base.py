@@ -1,6 +1,8 @@
 from abc import ABC, abstractmethod
 from collections.abc import Callable
-from datetime import datetime, timezone
+from datetime import datetime
+
+from django.utils import timezone
 
 from salocore.models.round import Round
 from salocore.repositories.round.protocol import RoundRepositoryProtocol
