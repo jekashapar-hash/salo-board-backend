@@ -156,9 +156,7 @@ class TestAdminTournamentDetail:
         other_tournament = factory.create_tournament(other_admin, title="Other Draft", status=Tournament.Status.DRAFT)
 
         # Спробуємо відредагувати через admin_client (який є admin_user, а не other_admin)
-        response = admin_client.patch(
-            admin_tournament_detail_url(other_tournament.id), {"title": "Stolen"}
-        )
+        response = admin_client.patch(admin_tournament_detail_url(other_tournament.id), {"title": "Stolen"})
         assert response.status_code == status.HTTP_403_FORBIDDEN
 
     def test_delete_draft_tournament(self, admin_client, tournament_draft):

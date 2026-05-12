@@ -207,6 +207,7 @@ class ModelFactory:
     @staticmethod
     def create_user(**kwargs):
         from salocore.models import User
+
         defaults = {
             "username": "testuser",
             "email": "test@user.com",
