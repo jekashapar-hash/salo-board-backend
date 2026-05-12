@@ -7,10 +7,9 @@
 """
 
 import pytest
-from django.utils import timezone
 from rest_framework import status
 
-from salocore.models import Team, TeamMember, Tournament
+from salocore.models import Team, TeamMember
 
 TEAMS_URL = "/api/teams"
 TEAMS_ARCHIVE_URL = "/api/teams/archive"
@@ -37,9 +36,7 @@ class TestTeamListGet:
 
     def test_returns_only_user_teams(self, auth_client_only, team, other_user, tournament):
         """Повертає тільки команди поточного юзера."""
-        other_team = Team.objects.create(
-            tournament=tournament, name="Other Team", status=Team.Status.REGISTRATED
-        )
+        other_team = Team.objects.create(tournament=tournament, name="Other Team", status=Team.Status.REGISTRATED)
         TeamMember.objects.create(team=other_team, user=other_user, is_captain=True)
 
         response = auth_client_only.get(self.url)
@@ -112,18 +109,14 @@ class TestTeamArchiveList:
         assert response.status_code == status.HTTP_401_UNAUTHORIZED
 
     def test_returns_archived_teams(self, auth_client_only, user, tournament):
-        archived = Team.objects.create(
-            tournament=tournament, name="Old Team", status=Team.Status.ARCHIVED
-        )
+        archived = Team.objects.create(tournament=tournament, name="Old Team", status=Team.Status.ARCHIVED)
         TeamMember.objects.create(team=archived, user=user, is_captain=True)
         response = auth_client_only.get(self.url)
         ids = [t["id"] for t in response.data]
         assert archived.id in ids
 
     def test_returns_teams_from_finished_tournament(self, auth_client_only, user, tournament_finished):
-        t = Team.objects.create(
-            tournament=tournament_finished, name="Finished Team", status=Team.Status.REGISTRATED
-        )
+        t = Team.objects.create(tournament=tournament_finished, name="Finished Team", status=Team.Status.REGISTRATED)
         TeamMember.objects.create(team=t, user=user, is_captain=True)
         response = auth_client_only.get(self.url)
         ids = [item["id"] for item in response.data]
@@ -141,7 +134,6 @@ class TestTeamArchiveList:
 
 @pytest.mark.django_db
 class TestTeamDetail:
-
     def test_returns_200_for_member(self, auth_client_only, team):
         response = auth_client_only.get(team_detail_url(team.id))
         assert response.status_code == status.HTTP_200_OK
@@ -156,18 +148,14 @@ class TestTeamDetail:
 
     def test_forbidden_when_hidden_and_not_member(self, other_client, admin_user, factory):
         """is_team_visible=False + юзер не учасник → 403."""
-        t = factory.create_tournament(
-            admin_user, title="Hidden T", is_team_visible=False
-        )
+        t = factory.create_tournament(admin_user, title="Hidden T", is_team_visible=False)
         hidden_team = Team.objects.create(tournament=t, name="Secret", status=Team.Status.REGISTRATED)
         response = other_client.get(team_detail_url(hidden_team.id))
         assert response.status_code == status.HTTP_403_FORBIDDEN
 
     def test_visible_for_member_even_when_hidden(self, auth_client_only, user, admin_user, factory):
         """Учасник бачить команду, навіть якщо is_team_visible=False."""
-        t = factory.create_tournament(
-            admin_user, title="Hidden T2", is_team_visible=False
-        )
+        t = factory.create_tournament(admin_user, title="Hidden T2", is_team_visible=False)
         hidden_team = Team.objects.create(tournament=t, name="MySecret", status=Team.Status.REGISTRATED)
         TeamMember.objects.create(team=hidden_team, user=user, is_captain=True)
         response = auth_client_only.get(team_detail_url(hidden_team.id))

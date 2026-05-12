@@ -32,7 +32,8 @@ def running_tournament(db, admin_user, factory):
 def round_future(db, running_tournament, factory):
     """Раунд з дедлайном у майбутньому."""
     return factory.create_round(
-        running_tournament, title="Round Future",
+        running_tournament,
+        title="Round Future",
         status=Round.Status.ACTIVE,
         deadline=timezone.now() + timezone.timedelta(days=3),
     )
@@ -42,7 +43,8 @@ def round_future(db, running_tournament, factory):
 def round_past(db, running_tournament, factory):
     """Раунд з дедлайном у минулому."""
     return factory.create_round(
-        running_tournament, title="Round Past",
+        running_tournament,
+        title="Round Past",
         status=Round.Status.ACTIVE,
         deadline=timezone.now() - timezone.timedelta(days=1),
     )
@@ -52,7 +54,8 @@ def round_past(db, running_tournament, factory):
 def submit_team(db, running_tournament, user):
     """Команда, де user є учасником."""
     t = Team.objects.create(
-        tournament=running_tournament, name="Submit Team",
+        tournament=running_tournament,
+        name="Submit Team",
         status=Team.Status.REGISTRATED,
     )
     TeamMember.objects.create(team=t, user=user, is_captain=True)
@@ -69,7 +72,6 @@ def submission(db, submit_team, round_future, factory):
 
 @pytest.mark.django_db
 class TestTeamSubmitListGet:
-
     def test_returns_200_for_member(self, auth_client_only, submit_team):
         response = auth_client_only.get(submit_list_url(submit_team.id))
         assert response.status_code == status.HTTP_200_OK
@@ -93,7 +95,6 @@ class TestTeamSubmitListGet:
 
 @pytest.mark.django_db
 class TestTeamSubmitListPost:
-
     def test_creates_submission_as_draft(self, auth_client_only, submit_team, round_future):
         payload = {
             "round": round_future.id,
@@ -112,23 +113,15 @@ class TestTeamSubmitListPost:
         assert response.status_code == status.HTTP_400_BAD_REQUEST
 
     def test_fails_if_deadline_passed(self, auth_client_only, submit_team, round_past):
-        response = auth_client_only.post(
-            submit_list_url(submit_team.id), {"round": round_past.id}
-        )
+        response = auth_client_only.post(submit_list_url(submit_team.id), {"round": round_past.id})
         assert response.status_code == status.HTTP_400_BAD_REQUEST
 
-    def test_fails_if_submission_already_exists(
-        self, auth_client_only, submit_team, round_future, submission
-    ):
-        response = auth_client_only.post(
-            submit_list_url(submit_team.id), {"round": round_future.id}
-        )
+    def test_fails_if_submission_already_exists(self, auth_client_only, submit_team, round_future, submission):
+        response = auth_client_only.post(submit_list_url(submit_team.id), {"round": round_future.id})
         assert response.status_code == status.HTTP_400_BAD_REQUEST
 
     def test_fails_for_non_member(self, other_client, submit_team, round_future):
-        response = other_client.post(
-            submit_list_url(submit_team.id), {"round": round_future.id}
-        )
+        response = other_client.post(submit_list_url(submit_team.id), {"round": round_future.id})
         assert response.status_code == status.HTTP_403_FORBIDDEN
 
 
@@ -137,7 +130,6 @@ class TestTeamSubmitListPost:
 
 @pytest.mark.django_db
 class TestTeamSubmitDetailPatch:
-
     def test_patch_updates_fields(self, auth_client_only, submit_team, submission):
         response = auth_client_only.patch(
             submit_detail_url(submit_team.id, submission.id),
@@ -146,9 +138,7 @@ class TestTeamSubmitDetailPatch:
         assert response.status_code == status.HTTP_200_OK
         assert response.data["github_url"] == "https://github.com/example"
 
-    def test_patch_fails_if_deadline_passed(
-        self, auth_client_only, submit_team, round_past, factory
-    ):
+    def test_patch_fails_if_deadline_passed(self, auth_client_only, submit_team, round_past, factory):
         sub = factory.create_submission(submit_team, round_past)
         response = auth_client_only.patch(
             submit_detail_url(submit_team.id, sub.id),
@@ -165,9 +155,7 @@ class TestTeamSubmitDetailPatch:
         submission.refresh_from_db()
         assert submission.submitted_at is not None
 
-    def test_patch_fails_if_already_submitted_without_draft(
-        self, auth_client_only, submit_team, submission
-    ):
+    def test_patch_fails_if_already_submitted_without_draft(self, auth_client_only, submit_team, submission):
         submission.status = Submission.Status.SUBMITTED
         submission.save()
         response = auth_client_only.patch(
@@ -193,7 +181,5 @@ class TestTeamSubmitDetailPatch:
         assert response.status_code == status.HTTP_403_FORBIDDEN
 
     def test_returns_404_for_nonexistent(self, auth_client_only, submit_team):
-        response = auth_client_only.patch(
-            submit_detail_url(submit_team.id, 99999), {}
-        )
+        response = auth_client_only.patch(submit_detail_url(submit_team.id, 99999), {})
         assert response.status_code == status.HTTP_404_NOT_FOUND

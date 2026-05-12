@@ -12,7 +12,6 @@ from rest_framework import status
 
 from salocore.models import Round, Submission, Team, TeamMember, Tournament, TournamentAdmin, TournamentJury
 
-
 # ─────────────────────────── UserRolesView ───────────────────────────
 
 
@@ -111,9 +110,7 @@ class TestUserTournamentHistory:
 
     def test_active_tournaments_sorted_first(self, auth_client_only, user, tournament, tournament_finished):
         """REGISTRATION/RUNNING йдуть першими."""
-        t_finished = Team.objects.create(
-            tournament=tournament_finished, name="OldTeam", status=Team.Status.REGISTRATED
-        )
+        t_finished = Team.objects.create(tournament=tournament_finished, name="OldTeam", status=Team.Status.REGISTRATED)
         TeamMember.objects.create(team=t_finished, user=user, is_captain=True)
         # user є учасником team (tournament=REGISTRATION) завдяки фікстурі team (якщо передати)
         TournamentJury.objects.create(tournament=tournament, user=user)
@@ -155,9 +152,7 @@ class TestUserSubmissions:
         """Якщо команда юзера має сабміт — він повертається."""
         round_obj = factory.create_round(tournament_running, status=Round.Status.ACTIVE)
         # Прив'язуємо команду до running-турніру
-        team_running = Team.objects.create(
-            tournament=tournament_running, name="MyTeam", status=Team.Status.REGISTRATED
-        )
+        team_running = Team.objects.create(tournament=tournament_running, name="MyTeam", status=Team.Status.REGISTRATED)
         # user вже є в auth_client_only
         # Отримаємо user з команди team (фікстура)
         member = TeamMember.objects.filter(team=team).first()
@@ -194,9 +189,7 @@ class TestUserSubmissions:
         TeamMember.objects.create(team=team_running, user=member.user, is_captain=True)
         s1 = factory.create_submission(team_running, round1)
         # Мануально зміщуємо час створення s1 у минуле
-        Submission.objects.filter(id=s1.id).update(
-            created_at=timezone.now() - timezone.timedelta(seconds=10)
-        )
+        Submission.objects.filter(id=s1.id).update(created_at=timezone.now() - timezone.timedelta(seconds=10))
         s2 = factory.create_submission(team_running, round2)
 
         response = auth_client_only.get(self.url)

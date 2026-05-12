@@ -19,9 +19,7 @@ from salocore.models import (
     Round,
     RoundAttachment,
     RoundRequirement,
-    Tournament,
 )
-
 
 # ─────────────────────────── Fixtures ────────────────────────────────
 
@@ -58,22 +56,30 @@ def round_draft(db, tournament_running, admin_user):
 @pytest.fixture
 def criterion(db, round_active):
     return EvaluationCriterion.objects.create(
-        round=round_active, category="Cat", title="Crit 1",
-        max_score=10, weight=1, order_index=1,
+        round=round_active,
+        category="Cat",
+        title="Crit 1",
+        max_score=10,
+        weight=1,
+        order_index=1,
     )
 
 
 @pytest.fixture
 def requirement(db, round_active):
     return RoundRequirement.objects.create(
-        round=round_active, text="Requirement 1", order_index=1,
+        round=round_active,
+        text="Requirement 1",
+        order_index=1,
     )
 
 
 @pytest.fixture
 def attachment(db, round_active):
     return RoundAttachment.objects.create(
-        round=round_active, label="Attach 1", url="http://x.com",
+        round=round_active,
+        label="Attach 1",
+        url="http://x.com",
         order_index=1,
     )
 
@@ -121,9 +127,7 @@ class TestRoundList:
     def test_filter_by_status(self, auth_client_only, tournament_running, round_active, round_draft):
         with patch("salocore.views.round.get_tournament_cheker") as m:
             m.return_value.check.return_value = None
-            response = auth_client_only.get(
-                self.url(tournament_running.id), {"status": Round.Status.ACTIVE}
-            )
+            response = auth_client_only.get(self.url(tournament_running.id), {"status": Round.Status.ACTIVE})
         ids = [r["id"] for r in response.data]
         assert round_active.id in ids
         assert round_draft.id not in ids

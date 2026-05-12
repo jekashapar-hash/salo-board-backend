@@ -8,10 +8,9 @@
 """
 
 import pytest
-from django.utils import timezone
 from rest_framework import status
 
-from salocore.models import Team, TeamMember, Tournament, User
+from salocore.models import Team, TeamMember, User
 
 
 def admin_teams_url(tid):
@@ -36,9 +35,7 @@ def admin_participant_detail_url(tid, team_id, uid):
 @pytest.fixture
 def admin_team(db, tournament, user):
     """Команда з user як капітаном у турнірі tournament."""
-    t = Team.objects.create(
-        tournament=tournament, name="Admin Team", status=Team.Status.REGISTRATED
-    )
+    t = Team.objects.create(tournament=tournament, name="Admin Team", status=Team.Status.REGISTRATED)
     TeamMember.objects.create(team=t, user=user, is_captain=True)
     return t
 
@@ -47,8 +44,10 @@ def admin_team(db, tournament, user):
 def second_member(db, admin_team):
     """Другий учасник команди admin_team."""
     member = User.objects.create_user(
-        username="member2", email="member2@mail.com",
-        password="Pass123!", invite_code="MEM2CODE",
+        username="member2",
+        email="member2@mail.com",
+        password="Pass123!",
+        invite_code="MEM2CODE",
     )
     TeamMember.objects.create(team=admin_team, user=member, is_captain=False)
     return member
@@ -59,7 +58,6 @@ def second_member(db, admin_team):
 
 @pytest.mark.django_db
 class TestAdminTeamList:
-
     def test_lists_all_teams(self, admin_client, tournament, admin_team):
         response = admin_client.get(admin_teams_url(tournament.id))
         assert response.status_code == status.HTTP_200_OK
@@ -80,11 +78,8 @@ class TestAdminTeamList:
 
 @pytest.mark.django_db
 class TestAdminTeamDisqualify:
-
     def test_disqualifies_team(self, admin_client, tournament, admin_team):
-        response = admin_client.patch(
-            admin_team_disqualify_url(tournament.id, admin_team.id)
-        )
+        response = admin_client.patch(admin_team_disqualify_url(tournament.id, admin_team.id))
         assert response.status_code == status.HTTP_200_OK
         admin_team.refresh_from_db()
         assert admin_team.status == Team.Status.DISQUALIFIED
@@ -94,9 +89,7 @@ class TestAdminTeamDisqualify:
         assert response.status_code == status.HTTP_404_NOT_FOUND
 
     def test_returns_403_for_regular_user(self, auth_client_only, tournament, admin_team):
-        response = auth_client_only.patch(
-            admin_team_disqualify_url(tournament.id, admin_team.id)
-        )
+        response = auth_client_only.patch(admin_team_disqualify_url(tournament.id, admin_team.id))
         assert response.status_code == status.HTTP_403_FORBIDDEN
 
 
@@ -105,16 +98,13 @@ class TestAdminTeamDisqualify:
 
 @pytest.mark.django_db
 class TestAdminParticipantList:
-
     def test_lists_members(self, admin_client, tournament, admin_team, user):
         response = admin_client.get(admin_participants_url(tournament.id, admin_team.id))
         assert response.status_code == status.HTTP_200_OK
         assert len(response.data) >= 1
 
     def test_returns_403_for_regular_user(self, auth_client_only, tournament, admin_team):
-        response = auth_client_only.get(
-            admin_participants_url(tournament.id, admin_team.id)
-        )
+        response = auth_client_only.get(admin_participants_url(tournament.id, admin_team.id))
         assert response.status_code == status.HTTP_403_FORBIDDEN
 
 
@@ -123,14 +113,9 @@ class TestAdminParticipantList:
 
 @pytest.mark.django_db
 class TestAdminParticipantDetail:
-
-    def test_patch_transfers_captain(
-        self, admin_client, tournament, admin_team, user, second_member
-    ):
+    def test_patch_transfers_captain(self, admin_client, tournament, admin_team, user, second_member):
         """PATCH → другий учасник стає капітаном, старий капітан — ні."""
-        response = admin_client.patch(
-            admin_participant_detail_url(tournament.id, admin_team.id, second_member.id)
-        )
+        response = admin_client.patch(admin_participant_detail_url(tournament.id, admin_team.id, second_member.id))
         assert response.status_code == status.HTTP_200_OK
 
         old_captain = TeamMember.objects.get(team=admin_team, user=user)
@@ -138,37 +123,19 @@ class TestAdminParticipantDetail:
         assert new_captain.is_captain is True
         assert old_captain.is_captain is False
 
-    def test_patch_returns_404_nonexistent_member(
-        self, admin_client, tournament, admin_team
-    ):
-        response = admin_client.patch(
-            admin_participant_detail_url(tournament.id, admin_team.id, 99999)
-        )
+    def test_patch_returns_404_nonexistent_member(self, admin_client, tournament, admin_team):
+        response = admin_client.patch(admin_participant_detail_url(tournament.id, admin_team.id, 99999))
         assert response.status_code == status.HTTP_404_NOT_FOUND
 
-    def test_delete_removes_member(
-        self, admin_client, tournament, admin_team, second_member
-    ):
-        response = admin_client.delete(
-            admin_participant_detail_url(tournament.id, admin_team.id, second_member.id)
-        )
+    def test_delete_removes_member(self, admin_client, tournament, admin_team, second_member):
+        response = admin_client.delete(admin_participant_detail_url(tournament.id, admin_team.id, second_member.id))
         assert response.status_code == status.HTTP_204_NO_CONTENT
-        assert not TeamMember.objects.filter(
-            team=admin_team, user=second_member
-        ).exists()
+        assert not TeamMember.objects.filter(team=admin_team, user=second_member).exists()
 
-    def test_delete_returns_404_nonexistent_member(
-        self, admin_client, tournament, admin_team
-    ):
-        response = admin_client.delete(
-            admin_participant_detail_url(tournament.id, admin_team.id, 99999)
-        )
+    def test_delete_returns_404_nonexistent_member(self, admin_client, tournament, admin_team):
+        response = admin_client.delete(admin_participant_detail_url(tournament.id, admin_team.id, 99999))
         assert response.status_code == status.HTTP_404_NOT_FOUND
 
-    def test_delete_returns_403_for_regular_user(
-        self, auth_client_only, tournament, admin_team, second_member
-    ):
-        response = auth_client_only.delete(
-            admin_participant_detail_url(tournament.id, admin_team.id, second_member.id)
-        )
+    def test_delete_returns_403_for_regular_user(self, auth_client_only, tournament, admin_team, second_member):
+        response = auth_client_only.delete(admin_participant_detail_url(tournament.id, admin_team.id, second_member.id))
         assert response.status_code == status.HTTP_403_FORBIDDEN

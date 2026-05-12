@@ -70,7 +70,8 @@ def reg_tournament_for_notif(db, admin_user, factory):
 def invite_team(db, reg_tournament_for_notif, other_user):
     """Команда з other_user як капітаном (для invite-тестів)."""
     t = Team.objects.create(
-        tournament=reg_tournament_for_notif, name="InviteTeam",
+        tournament=reg_tournament_for_notif,
+        name="InviteTeam",
         status=Team.Status.REGISTRATED,
     )
     TeamMember.objects.create(team=t, user=other_user, is_captain=True)
@@ -111,7 +112,6 @@ def notif_team_invite_expired(db, user, invite_team):
 
 @pytest.mark.django_db
 class TestNotificationList:
-
     def test_returns_200(self, auth_client_only):
         response = auth_client_only.get(NOTIF_LIST_URL)
         assert response.status_code == status.HTTP_200_OK
@@ -122,8 +122,11 @@ class TestNotificationList:
 
     def test_returns_own_notifications_only(self, auth_client_only, notif_unread, other_user):
         other_notif = Notification.objects.create(
-            user=other_user, type=Notification.Type.TOURNAMENT_FINISHED,
-            title="Other", message="B", action_type=Notification.ActionType.NONE,
+            user=other_user,
+            type=Notification.Type.TOURNAMENT_FINISHED,
+            title="Other",
+            message="B",
+            action_type=Notification.ActionType.NONE,
             status=Notification.Status.UNREAD,
             how_long_active=timezone.now() + timezone.timedelta(days=1),
         )
@@ -144,9 +147,7 @@ class TestNotificationList:
         assert notif_unread.id in ids
         assert notif_read.id in ids
 
-    def test_no_filter_returns_all_statuses(
-        self, auth_client_only, notif_unread, notif_read, notif_archived
-    ):
+    def test_no_filter_returns_all_statuses(self, auth_client_only, notif_unread, notif_read, notif_archived):
         response = auth_client_only.get(NOTIF_LIST_URL)
         ids = [n["id"] for n in response.data]
         assert notif_unread.id in ids
@@ -159,7 +160,6 @@ class TestNotificationList:
 
 @pytest.mark.django_db
 class TestNotificationArchiveList:
-
     def test_returns_200(self, auth_client_only):
         response = auth_client_only.get(NOTIF_ARCHIVE_URL)
         assert response.status_code == status.HTTP_200_OK
@@ -180,43 +180,30 @@ class TestNotificationArchiveList:
 
 @pytest.mark.django_db
 class TestNotificationDetail:
-
     def test_action_read(self, auth_client_only, notif_unread):
-        response = auth_client_only.patch(
-            notif_detail_url(notif_unread.id), {"action": "read"}, format="json"
-        )
+        response = auth_client_only.patch(notif_detail_url(notif_unread.id), {"action": "read"}, format="json")
         assert response.status_code == status.HTTP_200_OK
         notif_unread.refresh_from_db()
         assert notif_unread.status == Notification.Status.READ
 
     def test_action_archive(self, auth_client_only, notif_unread):
-        response = auth_client_only.patch(
-            notif_detail_url(notif_unread.id), {"action": "archive"}, format="json"
-        )
+        response = auth_client_only.patch(notif_detail_url(notif_unread.id), {"action": "archive"}, format="json")
         assert response.status_code == status.HTTP_200_OK
         notif_unread.refresh_from_db()
         assert notif_unread.status == Notification.Status.ARCHIVED
 
     def test_action_reject(self, auth_client_only, notif_team_invite):
-        response = auth_client_only.patch(
-            notif_detail_url(notif_team_invite.id), {"action": "reject"}, format="json"
-        )
+        response = auth_client_only.patch(notif_detail_url(notif_team_invite.id), {"action": "reject"}, format="json")
         assert response.status_code == status.HTTP_200_OK
         notif_team_invite.refresh_from_db()
         assert notif_team_invite.status == Notification.Status.ARCHIVED
 
-    def test_action_accept_invite_adds_member(
-        self, auth_client_only, user, notif_team_invite, invite_team
-    ):
-        response = auth_client_only.patch(
-            notif_detail_url(notif_team_invite.id), {"action": "accept"}, format="json"
-        )
+    def test_action_accept_invite_adds_member(self, auth_client_only, user, notif_team_invite, invite_team):
+        response = auth_client_only.patch(notif_detail_url(notif_team_invite.id), {"action": "accept"}, format="json")
         assert response.status_code == status.HTTP_200_OK
         assert TeamMember.objects.filter(team=invite_team, user=user).exists()
 
-    def test_action_accept_expired_invite(
-        self, auth_client_only, notif_team_invite_expired
-    ):
+    def test_action_accept_expired_invite(self, auth_client_only, notif_team_invite_expired):
         response = auth_client_only.patch(
             notif_detail_url(notif_team_invite_expired.id),
             {"action": "accept"},
@@ -225,48 +212,39 @@ class TestNotificationDetail:
         assert response.status_code == status.HTTP_400_BAD_REQUEST
         assert "error" in response.data
 
-    def test_action_accept_full_team(
-        self, auth_client_only, user, admin_user, reg_tournament_for_notif, factory
-    ):
+    def test_action_accept_full_team(self, auth_client_only, user, admin_user, reg_tournament_for_notif, factory):
         """Команда вже переповнена → 400."""
-        full_t = factory.create_tournament(
-            admin_user, title="Full", max_team=5, max_team_size=1
-        )
-        full_team = Team.objects.create(
-            tournament=full_t, name="Full Team", status=Team.Status.REGISTRATED
-        )
+        full_t = factory.create_tournament(admin_user, title="Full", max_team=5, max_team_size=1)
+        full_team = Team.objects.create(tournament=full_t, name="Full Team", status=Team.Status.REGISTRATED)
         cap_user = User.objects.create_user(
-            username="capfull", email="capfull@mail.com",
-            password="P123!", invite_code="CAPFULL1",
+            username="capfull",
+            email="capfull@mail.com",
+            password="P123!",
+            invite_code="CAPFULL1",
         )
         TeamMember.objects.create(team=full_team, user=cap_user, is_captain=True)
         notif = Notification.objects.create(
-            user=user, type=Notification.Type.TEAM_INVITE,
-            title="Full Invite", message="B", action_type=Notification.ActionType.YES_NO,
+            user=user,
+            type=Notification.Type.TEAM_INVITE,
+            title="Full Invite",
+            message="B",
+            action_type=Notification.ActionType.YES_NO,
             status=Notification.Status.UNREAD,
             how_long_active=timezone.now() + timezone.timedelta(days=1),
             action_url=f"http://example.com/accept?team_id={full_team.id}",
         )
-        response = auth_client_only.patch(
-            notif_detail_url(notif.id), {"action": "accept"}, format="json"
-        )
+        response = auth_client_only.patch(notif_detail_url(notif.id), {"action": "accept"}, format="json")
         assert response.status_code == status.HTTP_400_BAD_REQUEST
 
     def test_unknown_action(self, auth_client_only, notif_unread):
-        response = auth_client_only.patch(
-            notif_detail_url(notif_unread.id), {"action": "fly"}, format="json"
-        )
+        response = auth_client_only.patch(notif_detail_url(notif_unread.id), {"action": "fly"}, format="json")
         assert response.status_code == status.HTTP_400_BAD_REQUEST
 
     def test_cannot_act_on_foreign_notification(self, other_client, notif_unread):
         """Чужа нотифікація → 404."""
-        response = other_client.patch(
-            notif_detail_url(notif_unread.id), {"action": "read"}, format="json"
-        )
+        response = other_client.patch(notif_detail_url(notif_unread.id), {"action": "read"}, format="json")
         assert response.status_code == status.HTTP_404_NOT_FOUND
 
     def test_returns_401_unauthenticated(self, api_client, notif_unread):
-        response = api_client.patch(
-            notif_detail_url(notif_unread.id), {"action": "read"}, format="json"
-        )
+        response = api_client.patch(notif_detail_url(notif_unread.id), {"action": "read"}, format="json")
         assert response.status_code == status.HTTP_401_UNAUTHORIZED

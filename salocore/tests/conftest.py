@@ -202,7 +202,27 @@ def tournament_archived(db, admin_user):
 
 # ────────────────────────── Helpers ──────────────────────────────────
 
+
 class ModelFactory:
+    @staticmethod
+    def create_user(**kwargs):
+        from salocore.models import User
+        defaults = {
+            "username": "testuser",
+            "email": "test@user.com",
+            "password": "Password123!",
+            "first_name": "Test",
+            "last_name": "User",
+            "invite_code": "TESTCODE",
+        }
+        defaults.update(kwargs)
+        # Using create_user to handle password hashing
+        password = defaults.pop("password")
+        user = User.objects.create_user(**defaults)
+        user.set_password(password)
+        user.save()
+        return user
+
     @staticmethod
     def create_tournament(admin_user, **kwargs):
         now = timezone.now()

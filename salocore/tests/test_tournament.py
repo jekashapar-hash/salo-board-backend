@@ -9,15 +9,13 @@
   - GET /api/tournaments/<id>/admins       → TournamentAdminView
 """
 
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
 import pytest
 from django.urls import reverse
-from django.utils import timezone
 from rest_framework import status
 
-from salocore.models import Team, TeamMember, Tournament, TournamentAdmin, TournamentJury
-
+from salocore.models import Tournament, TournamentAdmin, TournamentJury
 
 # ─────────────────────────── TournamentListView ──────────────────────
 
@@ -138,9 +136,7 @@ class TestTournamentTeams:
         assert response.status_code == status.HTTP_200_OK
 
     def test_returns_403_when_hidden(self, api_client, admin_user, factory):
-        hidden = factory.create_tournament(
-            admin_user, title="Hidden", is_team_visible=False
-        )
+        hidden = factory.create_tournament(admin_user, title="Hidden", is_team_visible=False)
         response = api_client.get(self.url(hidden.id))
         assert response.status_code == status.HTTP_403_FORBIDDEN
 
@@ -169,9 +165,7 @@ class TestTournamentLeaderboard:
         assert response.status_code == status.HTTP_200_OK
 
     def test_returns_403_when_hidden(self, api_client, admin_user, factory):
-        hidden = factory.create_tournament(
-            admin_user, title="Hidden LB", is_team_visible=False
-        )
+        hidden = factory.create_tournament(admin_user, title="Hidden LB", is_team_visible=False)
         response = api_client.get(self.url(hidden.id))
         assert response.status_code == status.HTTP_403_FORBIDDEN
 

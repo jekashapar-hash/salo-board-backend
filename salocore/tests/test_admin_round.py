@@ -13,10 +13,7 @@ from django.utils import timezone
 from rest_framework import status
 
 from salocore.models import (
-    EvaluationCriterion,
     Round,
-    RoundAttachment,
-    RoundRequirement,
     Tournament,
 )
 
@@ -88,7 +85,6 @@ def round_with_crit_and_req(db, running_t, factory):
 
 @pytest.mark.django_db
 class TestAdminRoundList:
-
     def test_get_lists_rounds(self, admin_client, tournament_draft, draft_round):
         response = admin_client.get(admin_rounds_url(tournament_draft.id))
         assert response.status_code == status.HTTP_200_OK
@@ -101,7 +97,8 @@ class TestAdminRoundList:
 
     def test_post_creates_round(self, admin_client, tournament_draft):
         payload = {
-            "title": "New Round", "description": "Desc",
+            "title": "New Round",
+            "description": "Desc",
             "order_index": 1,
             "start_at": timezone.now().isoformat(),
             "deadline": (timezone.now() + timezone.timedelta(days=1)).isoformat(),
@@ -119,7 +116,6 @@ class TestAdminRoundList:
 
 @pytest.mark.django_db
 class TestAdminRoundDetail:
-
     def test_get_returns_round(self, admin_client, tournament_draft, draft_round):
         response = admin_client.get(admin_round_detail_url(tournament_draft.id, draft_round.id))
         assert response.status_code == status.HTTP_200_OK
@@ -143,15 +139,11 @@ class TestAdminRoundDetail:
         assert response.status_code == status.HTTP_400_BAD_REQUEST
 
     def test_delete_draft_round(self, admin_client, tournament_draft, draft_round):
-        response = admin_client.delete(
-            admin_round_detail_url(tournament_draft.id, draft_round.id)
-        )
+        response = admin_client.delete(admin_round_detail_url(tournament_draft.id, draft_round.id))
         assert response.status_code == status.HTTP_204_NO_CONTENT
 
     def test_delete_fails_non_draft(self, admin_client, running_t, active_round):
-        response = admin_client.delete(
-            admin_round_detail_url(running_t.id, active_round.id)
-        )
+        response = admin_client.delete(admin_round_detail_url(running_t.id, active_round.id))
         assert response.status_code == status.HTTP_400_BAD_REQUEST
 
 
@@ -160,13 +152,10 @@ class TestAdminRoundDetail:
 
 @pytest.mark.django_db
 class TestAdminRoundStart:
-
     def test_activates_round_with_crit_and_req(self, admin_client, running_t, round_with_crit_and_req):
         with patch("salocore.views.admin_round.get_round_cheker") as m:
             m.return_value.check.return_value = None
-            response = admin_client.patch(
-                admin_round_start_url(running_t.id, round_with_crit_and_req.id)
-            )
+            response = admin_client.patch(admin_round_start_url(running_t.id, round_with_crit_and_req.id))
         assert response.status_code == status.HTTP_200_OK
         round_with_crit_and_req.refresh_from_db()
         assert round_with_crit_and_req.status == Round.Status.ACTIVE
@@ -186,9 +175,7 @@ class TestAdminRoundStart:
     def test_fails_if_tournament_not_running(self, admin_client, tournament_draft, draft_round, factory):
         factory.create_criterion(draft_round, title="C")
         factory.create_requirement(draft_round, text="R")
-        response = admin_client.patch(
-            admin_round_start_url(tournament_draft.id, draft_round.id)
-        )
+        response = admin_client.patch(admin_round_start_url(tournament_draft.id, draft_round.id))
         assert response.status_code == status.HTTP_400_BAD_REQUEST
 
     def test_fails_if_not_draft(self, admin_client, running_t, active_round):
@@ -201,7 +188,6 @@ class TestAdminRoundStart:
 
 @pytest.mark.django_db
 class TestAdminRoundAttachment:
-
     def test_post_creates_attachment(self, admin_client, tournament_draft, draft_round):
         response = admin_client.post(
             admin_attachment_url(tournament_draft.id, draft_round.id),
@@ -211,15 +197,11 @@ class TestAdminRoundAttachment:
 
     def test_delete_removes_attachment(self, admin_client, tournament_draft, draft_round, factory):
         att = factory.create_attachment(draft_round, label="A")
-        response = admin_client.delete(
-            admin_attachment_detail_url(tournament_draft.id, draft_round.id, att.id)
-        )
+        response = admin_client.delete(admin_attachment_detail_url(tournament_draft.id, draft_round.id, att.id))
         assert response.status_code == status.HTTP_204_NO_CONTENT
 
     def test_delete_returns_404_nonexistent(self, admin_client, tournament_draft, draft_round):
-        response = admin_client.delete(
-            admin_attachment_detail_url(tournament_draft.id, draft_round.id, 99999)
-        )
+        response = admin_client.delete(admin_attachment_detail_url(tournament_draft.id, draft_round.id, 99999))
         assert response.status_code == status.HTTP_404_NOT_FOUND
 
 
@@ -228,7 +210,6 @@ class TestAdminRoundAttachment:
 
 @pytest.mark.django_db
 class TestAdminRoundRequirement:
-
     def test_post_creates_requirement(self, admin_client, tournament_draft, draft_round):
         response = admin_client.post(
             admin_requirement_url(tournament_draft.id, draft_round.id),
@@ -238,9 +219,7 @@ class TestAdminRoundRequirement:
 
     def test_delete_removes_requirement(self, admin_client, tournament_draft, draft_round, factory):
         req = factory.create_requirement(draft_round, text="R")
-        response = admin_client.delete(
-            admin_requirement_detail_url(tournament_draft.id, draft_round.id, req.id)
-        )
+        response = admin_client.delete(admin_requirement_detail_url(tournament_draft.id, draft_round.id, req.id))
         assert response.status_code == status.HTTP_204_NO_CONTENT
 
 
@@ -249,20 +228,14 @@ class TestAdminRoundRequirement:
 
 @pytest.mark.django_db
 class TestAdminRoundCriterion:
-
     def test_post_creates_criterion(self, admin_client, tournament_draft, draft_round):
         response = admin_client.post(
             admin_criterion_url(tournament_draft.id, draft_round.id),
-            {
-                "title": "Innovation", "category": "Cat", "max_score": 20,
-                "weight": 1, "order_index": 1
-            },
+            {"title": "Innovation", "category": "Cat", "max_score": 20, "weight": 1, "order_index": 1},
         )
         assert response.status_code == status.HTTP_201_CREATED
 
     def test_delete_removes_criterion(self, admin_client, tournament_draft, draft_round, factory):
         crit = factory.create_criterion(draft_round, title="C")
-        response = admin_client.delete(
-            admin_criterion_detail_url(tournament_draft.id, draft_round.id, crit.id)
-        )
+        response = admin_client.delete(admin_criterion_detail_url(tournament_draft.id, draft_round.id, crit.id))
         assert response.status_code == status.HTTP_204_NO_CONTENT
