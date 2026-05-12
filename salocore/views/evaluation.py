@@ -40,7 +40,11 @@ class EvaluationDetailView(APIView):
         except Submission.DoesNotExist:
             return Response(status=status.HTTP_404_NOT_FOUND)
 
-        evaluation = Evaluation.objects.filter(submission=sub, jury=request.user).first()
+        jury_id = request.query_params.get("jury_id")
+        if jury_id and is_creator:
+            evaluation = Evaluation.objects.filter(submission=sub, jury_id=jury_id).first()
+        else:
+            evaluation = Evaluation.objects.filter(submission=sub, jury=request.user).first()
 
         if not evaluation and is_jury:
             evaluation = Evaluation.objects.create(submission=sub, jury=request.user, status=Evaluation.Status.DRAFT)
