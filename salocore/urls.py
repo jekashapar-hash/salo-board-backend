@@ -104,12 +104,12 @@ urlpatterns = [
         TeamParticipantListCreateView.as_view(),
     ),
     path(
-        "teams/<int:team_id>/participant/<str:user_id>",
-        TeamParticipantDetailView.as_view(),
-    ),
-    path(
         "teams/<int:team_id>/participant/can-add",
         TeamCanCreateParticipantView.as_view(),
+    ),
+    path(
+        "teams/<int:team_id>/participant/<str:user_id>",
+        TeamParticipantDetailView.as_view(),
     ),
     path(
         "teams/<int:team_id>/submit",

@@ -44,11 +44,11 @@ class AdminTournamentListView(APIView):
     @extend_schema(
         summary="Створити турнір (Адмін)",
         description="Створення нового турніру. Автор турніру автоматично стає його творцем.",
-        request=TournamentSerializer,
-        responses={201: TournamentSerializer},
+        request=TournamentDetailSerializer,
+        responses={201: TournamentDetailSerializer},
     )
     def post(self, request):
-        serializer = TournamentSerializer(data=request.data)
+        serializer = TournamentDetailSerializer(data=request.data)
         if serializer.is_valid():
             serializer.save(creator=request.user)
             return Response(serializer.data, status=status.HTTP_201_CREATED)

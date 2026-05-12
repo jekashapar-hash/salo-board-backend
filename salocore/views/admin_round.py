@@ -137,10 +137,9 @@ class AdminRoundStartView(APIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        # Перевірка попереднього раунду
         prev_round = (
-            Round.objects.filter(tournament=round_inst.tournament, orderIndex__lt=round_inst.orderIndex)
-            .order_by("-orderIndex")
+            Round.objects.filter(tournament=round_inst.tournament, order_index__lt=round_inst.order_index)
+            .order_by("-order_index")
             .first()
         )
 

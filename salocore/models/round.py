@@ -14,7 +14,7 @@ class Round(models.Model):
     tournament = models.ForeignKey(Tournament, on_delete=models.CASCADE)
     title = models.CharField(max_length=100)
     description = models.TextField()
-    orderIndex = models.IntegerField()
+    order_index = models.IntegerField()
     status = models.CharField(max_length=20, choices=Status.choices, default=Status.DRAFT)
     start_at = models.DateTimeField()
     deadline = models.DateTimeField()
