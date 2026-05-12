@@ -249,21 +249,23 @@ class TournamentDetailSerializer(serializers.ModelSerializer):
 
 
 class TournamentJurySerializer(serializers.ModelSerializer):
-    username = serializers.CharField(source="user.username", read_only=True)
+    first_name = serializers.CharField(source="user.first_name", read_only=True)
+    last_name = serializers.CharField(source="user.last_name", read_only=True)
 
     class Meta:
         model = TournamentJury
-        fields = ["id", "user", "username", "tournament"]
-        read_only_fields = ["id", "user", "username", "tournament"]
+        fields = ["id", "user", "first_name", "last_name", "tournament"]
+        read_only_fields = ["id", "user", "first_name", "last_name", "tournament"]
 
 
 class TournamentAdminSerializer(serializers.ModelSerializer):
-    username = serializers.CharField(source="user.username", read_only=True)
+    first_name = serializers.CharField(source="user.first_name", read_only=True)
+    last_name = serializers.CharField(source="user.last_name", read_only=True)
 
     class Meta:
         model = TournamentAdmin
-        fields = ["id", "user", "username", "tournament"]
-        read_only_fields = ["id", "user", "username", "tournament"]
+        fields = ["id", "user", "first_name", "last_name", "tournament"]
+        read_only_fields = ["id", "user", "first_name", "last_name", "tournament"]
 
 
 class TeamSerializer(serializers.ModelSerializer):
@@ -275,7 +277,6 @@ class TeamSerializer(serializers.ModelSerializer):
 
 class TeamMemberSerializer(serializers.ModelSerializer):
     user_email = serializers.EmailField(source="user.email", read_only=True)
-    user_username = serializers.CharField(source="user.username", read_only=True)
     user_first_name = serializers.CharField(source="user.first_name", read_only=True)
     user_last_name = serializers.CharField(source="user.last_name", read_only=True)
 
@@ -286,7 +287,6 @@ class TeamMemberSerializer(serializers.ModelSerializer):
             "team",
             "user",
             "user_email",
-            "user_username",
             "user_first_name",
             "user_last_name",
             "is_captain",
@@ -427,14 +427,16 @@ class UserSubmissionSerializer(serializers.Serializer):
 
 
 class EvaluationSerializer(serializers.ModelSerializer):
-    jury_username = serializers.CharField(source="jury.username", read_only=True)
+    jury_first_name = serializers.CharField(source="jury.first_name", read_only=True)
+    jury_last_name = serializers.CharField(source="jury.last_name", read_only=True)
 
     class Meta:
         model = Evaluation
         fields = [
             "id",
             "jury",
-            "jury_username",
+            "jury_first_name",
+            "jury_last_name",
             "submission",
             "comment",
             "status",
@@ -487,9 +489,10 @@ class ChatSerializer(serializers.ModelSerializer):
 
 
 class MessageSerializer(serializers.ModelSerializer):
-    username = serializers.CharField(source="user.username", read_only=True)
+    first_name = serializers.CharField(source="user.first_name", read_only=True)
+    last_name = serializers.CharField(source="user.last_name", read_only=True)
 
     class Meta:
         model = Message
-        fields = ["id", "chat", "user", "username", "text", "created_at"]
-        read_only_fields = ["id", "chat", "user", "username", "created_at"]
+        fields = ["id", "chat", "user", "first_name", "last_name", "text", "created_at"]
+        read_only_fields = ["id", "chat", "user", "first_name", "last_name", "created_at"]

@@ -9,6 +9,8 @@ class User(AbstractUser):
     invite_code = models.CharField(max_length=100, null=True, blank=True)
 
     def __str__(self):
+        if self.first_name or self.last_name:
+            return f"{self.first_name} {self.last_name}".strip()
         return self.username
 
 
