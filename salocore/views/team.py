@@ -1,11 +1,10 @@
 from django.db.models import Q
+from django.utils import timezone
 from drf_spectacular.utils import OpenApiResponse, extend_schema
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
-
-from django.utils import timezone
 
 from ..models import Notification, Team, TeamMember, Tournament
 from ..serializers import NotificationSerializer, TeamSerializer

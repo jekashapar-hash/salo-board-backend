@@ -1,8 +1,11 @@
-import pytest
 from datetime import timedelta
+
+import pytest
 from django.utils import timezone
 from rest_framework import status
+
 from salocore.models import Notification, Team, TeamMember
+
 
 def team_invites_url(team_id):
     return f"/api/teams/{team_id}/invites"
