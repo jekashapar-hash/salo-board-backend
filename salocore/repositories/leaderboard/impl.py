@@ -6,7 +6,7 @@ class LeaderboardRepositoryImpl:
         return list(
             Round.objects.filter(tournament=tournament, status=Round.Status.EVALUATED)
             .prefetch_related("evaluationcriterion_set")
-            .order_by("orderIndex")
+            .order_by("order_index")
         )
 
     def get_active_teams(self, tournament) -> list[Team]:
