@@ -260,4 +260,6 @@ urlpatterns = [
     path("admin/chats", AdminChatListView.as_view()),
     path("admin/chats/<int:chat_id>", AdminChatDetailView.as_view()),
     path("admin/chats/<int:chat_id>/messages", AdminChatMessageListView.as_view()),
+    path("webhooks/telegram/", telegram_webhook, name="telegram-webhook"),
+    path("user/telegram-link", TelegramLinkView.as_view(), name="user-telegram-link"),
 ]
