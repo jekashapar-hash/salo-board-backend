@@ -7,6 +7,8 @@ from rest_framework.permissions import IsAdminUser
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from salocore.services.distribution.deps import get_distribution_service
+from salocore.services.notification.deps import get_notification_service
 from salocore.use_cases.round_cheker.deps import get_round_cheker
 
 from ..models import EvaluationCriterion, Round, RoundAttachment, RoundRequirement, Tournament
@@ -151,9 +153,62 @@ class AdminRoundStartView(APIView):
 
         round_inst.status = Round.Status.ACTIVE
         round_inst.save()
+        get_notification_service().start_round(round_inst)
         get_round_cheker().check()
         serializer = RoundSerializer(round_inst)
         return Response(serializer.data)
+
+
+class AdminRoundCloseSubmissionsView(APIView):
+    permission_classes = [IsAdminUser, IsTournamentCreator]
+
+    @extend_schema(
+        summary="Закрити прийом робіт (Адмін)",
+        description="Вручну переводить раунд зі статусу ACTIVE в SUBMISSION_CLOSED.",
+        request=None,
+        responses={200: RoundSerializer},
+    )
+    def patch(self, request, tournament_id, round_id):
+        round_inst = get_object_or_404(Round, id=round_id, tournament_id=tournament_id)
+        self.check_object_permissions(request, round_inst.tournament)
+
+        if round_inst.status != Round.Status.ACTIVE:
+            return Response(
+                {"error": "Раунд повинен бути у статусі Active."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        round_inst.status = Round.Status.SUBMISSION_CLOSED
+        round_inst.save()
+        get_distribution_service().distribute(round_inst)
+        get_round_cheker().check()
+        return Response(RoundSerializer(round_inst).data)
+
+
+class AdminRoundCloseEvaluationsView(APIView):
+    permission_classes = [IsAdminUser, IsTournamentCreator]
+
+    @extend_schema(
+        summary="Закрити оцінювання (Адмін)",
+        description="Вручну переводить раунд зі статусу SUBMISSION_CLOSED в EVALUATED.",
+        request=None,
+        responses={200: RoundSerializer},
+    )
+    def patch(self, request, tournament_id, round_id):
+        round_inst = get_object_or_404(Round, id=round_id, tournament_id=tournament_id)
+        self.check_object_permissions(request, round_inst.tournament)
+
+        if round_inst.status != Round.Status.SUBMISSION_CLOSED:
+            return Response(
+                {"error": "Раунд повинен бути у статусі Submission Closed."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        round_inst.status = Round.Status.EVALUATED
+        round_inst.save()
+        get_notification_service().finish_evaluation(round_inst)
+        get_round_cheker().check()
+        return Response(RoundSerializer(round_inst).data)
 
 
 class AdminRoundAttachmentDetailView(APIView):
