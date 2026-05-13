@@ -10,6 +10,7 @@ from salocore.models import Notification, Team, TeamMember
 def team_invites_url(team_id):
     return f"/api/teams/{team_id}/invites"
 
+
 @pytest.mark.django_db
 class TestTeamInvitationList:
     def test_returns_200_for_member(self, auth_client_only, team):
@@ -27,11 +28,11 @@ class TestTeamInvitationList:
     def test_returns_only_team_specific_invites(self, auth_client_only, user, team, tournament, other_user):
         """Возвращает приглашения только для указанной команды."""
         now = timezone.now()
-        
+
         # Команда пользователя (он в ней мембер по дефолту из фикстуры team?)
         # Уточним членство
         TeamMember.objects.get_or_create(team=team, user=user)
-        
+
         # Приглашение от НАШЕЙ команды
         our_invite = Notification.objects.create(
             user=other_user,
@@ -41,9 +42,9 @@ class TestTeamInvitationList:
             action_type=Notification.ActionType.YES_NO,
             status=Notification.Status.UNREAD,
             action_url=f"/tournaments/{team.tournament_id}?team_id={team.id}",
-            how_long_active=now + timedelta(days=1)
+            how_long_active=now + timedelta(days=1),
         )
-        
+
         # Приглашение от ДРУГОЙ команды
         other_team = Team.objects.create(tournament=tournament, name="Other", status=Team.Status.REGISTRATED)
         other_invite = Notification.objects.create(
@@ -54,12 +55,12 @@ class TestTeamInvitationList:
             action_type=Notification.ActionType.YES_NO,
             status=Notification.Status.UNREAD,
             action_url=f"/tournaments/{team.tournament_id}?team_id={other_team.id}",
-            how_long_active=now + timedelta(days=1)
+            how_long_active=now + timedelta(days=1),
         )
 
         response = auth_client_only.get(team_invites_url(team.id))
         assert response.status_code == status.HTTP_200_OK
-        
+
         ids = [n["id"] for n in response.data]
         assert our_invite.id in ids
         assert other_invite.id not in ids
@@ -77,9 +78,10 @@ class TestTeamInvitationList:
             status=Notification.Status.UNREAD,
             action_url=f"?team_id={team.id}",
             how_long_active=now + timedelta(days=1),
-            title="A", message="M"
+            title="A",
+            message="M",
         )
-        
+
         # Просроченное
         expired = Notification.objects.create(
             user=other_user,
@@ -87,9 +89,10 @@ class TestTeamInvitationList:
             status=Notification.Status.UNREAD,
             action_url=f"?team_id={team.id}",
             how_long_active=now - timedelta(days=1),
-            title="E", message="M"
+            title="E",
+            message="M",
         )
-        
+
         # Архивованное
         archived = Notification.objects.create(
             user=other_user,
@@ -97,7 +100,8 @@ class TestTeamInvitationList:
             status=Notification.Status.ARCHIVED,
             action_url=f"?team_id={team.id}",
             how_long_active=now + timedelta(days=1),
-            title="Ar", message="M"
+            title="Ar",
+            message="M",
         )
 
         response = auth_client_only.get(team_invites_url(team.id))
