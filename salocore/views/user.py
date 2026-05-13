@@ -1,3 +1,5 @@
+import os
+
 from drf_spectacular.utils import OpenApiExample, OpenApiResponse, extend_schema
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
@@ -227,3 +229,22 @@ class UserSubmissionsView(APIView):
 
         serializer = UserSubmissionSerializer(data, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+class TelegramLinkView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    @extend_schema(
+        summary="Посилання для підключення Telegram",
+        description=(
+            "Повертає deep link на бота з параметром `start=<user_pk>`. "
+            "Користувач переходить за посиланням, пише боту /start — "
+            "бот автоматично зберігає його chat_id для розсилки сповіщень."
+        ),
+        responses={200: {"type": "object", "properties": {"link": {"type": "string"}}}},
+        tags=["User"],
+    )
+    def get(self, request):
+        bot_username = os.getenv("TELEGRAM_BOT_USERNAME", "")
+        link = f"https://t.me/{bot_username}?start={request.user.pk}"
+        return Response({"link": link}, status=status.HTTP_200_OK)

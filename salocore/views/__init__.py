@@ -11,5 +11,6 @@ from .round import *
 from .submission import *
 from .team import *
 from .team_member import *
+from .telegram_webhook import telegram_webhook as telegram_webhook
 from .tournament import *
 from .user import *
