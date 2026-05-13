@@ -32,6 +32,7 @@ class TournamentPagination(PageNumberPagination):
 
 class TournamentListView(APIView):
     permission_classes = [AllowAny]
+    pagination_class = TournamentPagination
 
     @extend_schema(
         summary="Список турнірів",
@@ -83,6 +84,7 @@ class TournamentListView(APIView):
 
 class ArchivedTournamentListView(APIView):
     permission_classes = [AllowAny]
+    pagination_class = TournamentPagination
 
     @extend_schema(
         summary="Список архівних турнірів",
