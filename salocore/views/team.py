@@ -1,12 +1,13 @@
 from django.db.models import Q
+from django.utils import timezone
 from drf_spectacular.utils import OpenApiResponse, extend_schema
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from ..models import Team, TeamMember, Tournament
-from ..serializers import TeamSerializer
+from ..models import Notification, Team, TeamMember, Tournament
+from ..serializers import NotificationSerializer, TeamSerializer
 
 
 class TeamListView(APIView):
@@ -83,6 +84,40 @@ class TeamArchiveListView(APIView):
             .distinct()
         )
         serializer = TeamSerializer(teams, many=True)
+        return Response(serializer.data)
+
+
+class TeamInvitationListView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    @extend_schema(
+        summary="Список діючих запрошень до конкретної команди",
+        description="Повертає список всіх актуальних (не прострочених та не архівованих) запрошень, надісланих вказаною командою.",
+        responses={200: NotificationSerializer(many=True)},
+    )
+    def get(self, request, team_id):
+        # Перевірка, чи команда існує
+        try:
+            team = Team.objects.get(id=team_id)
+        except Team.DoesNotExist:
+            return Response({"detail": "Команда не знайдена."}, status=status.HTTP_404_NOT_FOUND)
+
+        # Перевірка прав: тільки учасники команди можуть бачити запрошення
+        if not TeamMember.objects.filter(team=team, user=request.user).exists():
+            return Response(
+                {"detail": "У вас немає доступу до цієї команди."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
+        now = timezone.now()
+        invites = Notification.objects.filter(
+            type=Notification.Type.TEAM_INVITE,
+            status__in=[Notification.Status.UNREAD, Notification.Status.READ],
+            how_long_active__gt=now,
+            action_url__contains=f"team_id={team_id}",
+        ).order_by("-created_at")
+
+        serializer = NotificationSerializer(invites, many=True)
         return Response(serializer.data)
 
 
