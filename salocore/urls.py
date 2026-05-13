@@ -185,6 +185,26 @@ urlpatterns = [
         "admin/tournaments/<int:tournament_id>/start",
         AdminTournamentStartView.as_view(),
     ),
+    path(
+        "admin/tournaments/<int:tournament_id>/start-registration",
+        AdminTournamentStartRegistrationView.as_view(),
+        name="admin-tournament-start-registration",
+    ),
+    path(
+        "admin/tournaments/<int:tournament_id>/close-registration",
+        AdminTournamentCloseRegistrationView.as_view(),
+        name="admin-tournament-close-registration",
+    ),
+    path(
+        "admin/tournaments/<int:tournament_id>/finish",
+        AdminTournamentFinishView.as_view(),
+        name="admin-tournament-finish",
+    ),
+    path(
+        "admin/tournaments/<int:tournament_id>/archive",
+        AdminTournamentArchiveView.as_view(),
+        name="admin-tournament-archive",
+    ),
     path("admin/tournaments/<int:tournament_id>/jury", AdminTournamentJuryView.as_view()),
     path("admin/tournaments/<int:tournament_id>/jury/<int:user_id>", AdminTournamentJuryDetailView.as_view()),
     path(
@@ -203,6 +223,16 @@ urlpatterns = [
     path(
         "admin/tournaments/<int:tournament_id>/rounds/<int:round_id>/start",
         AdminRoundStartView.as_view(),
+    ),
+    path(
+        "admin/tournaments/<int:tournament_id>/rounds/<int:round_id>/close-submissions",
+        AdminRoundCloseSubmissionsView.as_view(),
+        name="admin-round-close-submissions",
+    ),
+    path(
+        "admin/tournaments/<int:tournament_id>/rounds/<int:round_id>/close-evaluations",
+        AdminRoundCloseEvaluationsView.as_view(),
+        name="admin-round-close-evaluations",
     ),
     path(
         "admin/tournaments/<int:tournament_id>/rounds/<int:round_id>/attachment",

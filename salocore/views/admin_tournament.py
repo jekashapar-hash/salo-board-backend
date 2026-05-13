@@ -1,3 +1,4 @@
+
 from django.contrib.auth import get_user_model
 from django.db.models import Q
 from django.shortcuts import get_object_or_404
@@ -9,6 +10,7 @@ from rest_framework.permissions import IsAdminUser
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from salocore.services.notification.deps import get_notification_service
 from salocore.use_cases.tournament_cheker.deps import get_tournament_cheker
 
 from ..models import Tournament, TournamentAdmin, TournamentJury
@@ -138,9 +140,120 @@ class AdminTournamentStartView(APIView):
 
         tournament.status = Tournament.Status.REGISTRATION
         tournament.save()
+        get_notification_service().reg_start(tournament)
         get_tournament_cheker().check()
         serializer = TournamentSerializer(tournament)
         return Response(serializer.data)
+
+
+class AdminTournamentStartRegistrationView(APIView):
+    permission_classes = [IsAdminUser, IsTournamentCreator]
+
+    @extend_schema(
+        summary="Розпочати реєстрацію (Адмін)",
+        description="Вручну переводить турнір зі статусу DRAFT в REGISTRATION.",
+        request=None,
+        responses={200: TournamentSerializer},
+    )
+    def patch(self, request, tournament_id):
+        tournament = get_object_or_404(Tournament, id=tournament_id)
+        self.check_object_permissions(request, tournament)
+
+        if tournament.status != Tournament.Status.DRAFT:
+            return Response(
+                {"error": "Турнір повинен бути у статусі Draft."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        has_jury = TournamentJury.objects.filter(tournament=tournament).exists()
+        if not has_jury:
+            return Response(
+                {"error": "Турнір повинен мати хоча б одного члена журі."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        tournament.status = Tournament.Status.REGISTRATION
+        tournament.save()
+        get_notification_service().reg_start(tournament)
+        get_tournament_cheker().check()
+        return Response(TournamentSerializer(tournament).data)
+
+
+class AdminTournamentCloseRegistrationView(APIView):
+    permission_classes = [IsAdminUser, IsTournamentCreator]
+
+    @extend_schema(
+        summary="Завершити реєстрацію (Адмін)",
+        description="Вручну переводить турнір зі статусу REGISTRATION в RUNNING.",
+        request=None,
+        responses={200: TournamentSerializer},
+    )
+    def patch(self, request, tournament_id):
+        tournament = get_object_or_404(Tournament, id=tournament_id)
+        self.check_object_permissions(request, tournament)
+
+        if tournament.status != Tournament.Status.REGISTRATION:
+            return Response(
+                {"error": "Турнір повинен бути у статусі Registration."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        tournament.status = Tournament.Status.RUNNING
+        tournament.save()
+        get_notification_service().reg_end(tournament)
+        get_tournament_cheker().check()
+        return Response(TournamentSerializer(tournament).data)
+
+
+class AdminTournamentFinishView(APIView):
+    permission_classes = [IsAdminUser, IsTournamentCreator]
+
+    @extend_schema(
+        summary="Завершити турнір (Адмін)",
+        description="Вручну переводить турнір зі статусу RUNNING в FINISHED.",
+        request=None,
+        responses={200: TournamentSerializer},
+    )
+    def patch(self, request, tournament_id):
+        tournament = get_object_or_404(Tournament, id=tournament_id)
+        self.check_object_permissions(request, tournament)
+
+        if tournament.status != Tournament.Status.RUNNING:
+            return Response(
+                {"error": "Турнір повинен бути у статусі Running."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        tournament.status = Tournament.Status.FINISHED
+        tournament.save()
+        get_notification_service().finish_tournament(tournament)
+        get_tournament_cheker().check()
+        return Response(TournamentSerializer(tournament).data)
+
+
+class AdminTournamentArchiveView(APIView):
+    permission_classes = [IsAdminUser, IsTournamentCreator]
+
+    @extend_schema(
+        summary="Архівувати турнір (Адмін)",
+        description="Вручну переводить турнір зі статусу FINISHED в ARCHIVED.",
+        request=None,
+        responses={200: TournamentSerializer},
+    )
+    def patch(self, request, tournament_id):
+        tournament = get_object_or_404(Tournament, id=tournament_id)
+        self.check_object_permissions(request, tournament)
+
+        if tournament.status != Tournament.Status.FINISHED:
+            return Response(
+                {"error": "Турнір повинен бути у статусі Finished."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        tournament.status = Tournament.Status.ARCHIVED
+        tournament.save()
+        get_tournament_cheker().check()
+        return Response(TournamentSerializer(tournament).data)
 
 
 class AdminTournamentJuryDetailView(APIView):
