@@ -96,6 +96,11 @@ urlpatterns = [
         TeamArchiveListView.as_view(),
     ),
     path(
+        "teams/<int:team_id>/invites",
+        TeamInvitationListView.as_view(),
+        name="team-invites",
+    ),
+    path(
         "teams/<int:team_id>",
         TeamDetailView.as_view(),
     ),
