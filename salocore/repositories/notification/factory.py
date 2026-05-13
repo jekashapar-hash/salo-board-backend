@@ -13,7 +13,7 @@ class NotificationFactoryImpl:
     def smart_make(self, user_profile: UserProfile) -> list[NotificationRepositoryProtocol]:
         # DB notification is always created for every user
         notifications: list[NotificationRepositoryProtocol] = [DbNotificationRepositoryImpl()]
-        if user_profile.telegram:
+        if hasattr(user_profile.user, "telegram_profile"):
             notifications.append(TelegramNotificationRepositoryImpl())
         if user_profile.discord:
             notifications.append(DiscordNotificationRepositoryImpl())
