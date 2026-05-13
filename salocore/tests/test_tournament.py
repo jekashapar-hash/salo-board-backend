@@ -30,50 +30,50 @@ class TestTournamentList:
 
     def test_excludes_archived_tournaments(self, api_client, tournament, tournament_archived):
         response = api_client.get(self.url)
-        ids = [t["id"] for t in response.data]
+        ids = [t["id"] for t in response.data["results"]]
         assert tournament.id in ids
         assert tournament_archived.id not in ids
 
     def test_filter_by_name(self, api_client, tournament):
         response = api_client.get(self.url, {"name": "Test"})
-        assert all("Test" in t["title"] for t in response.data)
+        assert all("Test" in t["title"] for t in response.data["results"])
 
     def test_filter_by_name_no_match(self, api_client, tournament):
         response = api_client.get(self.url, {"name": "НемаєТакого123"})
-        assert response.data == []
+        assert response.data["results"] == []
 
     def test_filter_by_status(self, api_client, tournament, tournament_draft):
         response = api_client.get(self.url, {"status": Tournament.Status.REGISTRATION})
-        ids = [t["id"] for t in response.data]
+        ids = [t["id"] for t in response.data["results"]]
         assert tournament.id in ids
         assert tournament_draft.id not in ids
 
     def test_filter_by_role_unauthenticated_returns_empty(self, api_client, tournament):
         """Без токена + role=participant → пустий список."""
         response = api_client.get(self.url, {"role": "participant"})
-        assert response.data == []
+        assert response.data["results"] == []
 
     def test_filter_by_role_participant(self, auth_client_only, user, team, tournament):
         """Юзер учасник команди → відображається при role=participant."""
         response = auth_client_only.get(self.url, {"role": "participant"})
-        ids = [t["id"] for t in response.data]
+        ids = [t["id"] for t in response.data["results"]]
         assert tournament.id in ids
 
     def test_filter_by_role_jury(self, auth_client_only, user, tournament):
         TournamentJury.objects.create(tournament=tournament, user=user)
         response = auth_client_only.get(self.url, {"role": "jury"})
-        ids = [t["id"] for t in response.data]
+        ids = [t["id"] for t in response.data["results"]]
         assert tournament.id in ids
 
     def test_filter_by_role_admin(self, auth_client_only, user, tournament):
         TournamentAdmin.objects.create(tournament=tournament, user=user)
         response = auth_client_only.get(self.url, {"role": "admin"})
-        ids = [t["id"] for t in response.data]
+        ids = [t["id"] for t in response.data["results"]]
         assert tournament.id in ids
 
     def test_filter_by_role_all_returns_all(self, auth_client_only, tournament):
         response = auth_client_only.get(self.url, {"role": "all"})
-        ids = [t["id"] for t in response.data]
+        ids = [t["id"] for t in response.data["results"]]
         assert tournament.id in ids
 
 
@@ -90,14 +90,14 @@ class TestArchivedTournamentList:
 
     def test_returns_only_archived(self, api_client, tournament, tournament_archived):
         response = api_client.get(self.url)
-        ids = [t["id"] for t in response.data]
+        ids = [t["id"] for t in response.data["results"]]
         assert tournament_archived.id in ids
         assert tournament.id not in ids
 
     def test_filter_by_name(self, api_client, tournament_archived):
         response = api_client.get(self.url, {"name": "Archived"})
-        assert len(response.data) >= 1
-        assert all("Archived" in t["title"] for t in response.data)
+        assert len(response.data["results"]) >= 1
+        assert all("Archived" in t["title"] for t in response.data["results"])
 
 
 # ────────────────────────── TournamentDetailView ─────────────────────

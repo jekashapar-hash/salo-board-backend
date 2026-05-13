@@ -6,6 +6,7 @@ from drf_spectacular.utils import (
     extend_schema,
 )
 from rest_framework import status
+from rest_framework.pagination import PageNumberPagination
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -21,6 +22,12 @@ from ..serializers import (
     TournamentSerializer,
 )
 from ..use_cases.leaderboard.deps import get_leaderboard_use_case
+
+
+class TournamentPagination(PageNumberPagination):
+    page_size = 20
+    page_size_query_param = "page_size"
+    max_page_size = 100
 
 
 class TournamentListView(APIView):
@@ -68,8 +75,10 @@ class TournamentListView(APIView):
             elif role == "admin":
                 queryset = queryset.filter(Q(tournamentadmin__user=request.user) | Q(creator=request.user)).distinct()
 
-        serializer = TournamentSerializer(queryset, many=True)
-        return Response(serializer.data)
+        paginator = TournamentPagination()
+        paginated_queryset = paginator.paginate_queryset(queryset, request, view=self)
+        serializer = TournamentSerializer(paginated_queryset, many=True)
+        return paginator.get_paginated_response(serializer.data)
 
 
 class ArchivedTournamentListView(APIView):
@@ -107,8 +116,10 @@ class ArchivedTournamentListView(APIView):
             elif role == "admin":
                 queryset = queryset.filter(Q(tournamentadmin__user=request.user) | Q(creator=request.user)).distinct()
 
-        serializer = TournamentSerializer(queryset, many=True)
-        return Response(serializer.data)
+        paginator = TournamentPagination()
+        paginated_queryset = paginator.paginate_queryset(queryset, request, view=self)
+        serializer = TournamentSerializer(paginated_queryset, many=True)
+        return paginator.get_paginated_response(serializer.data)
 
 
 class TournamentDetailView(APIView):
