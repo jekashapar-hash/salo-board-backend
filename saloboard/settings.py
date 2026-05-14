@@ -89,7 +89,7 @@ TEMPLATES = [
     },
 ]
 
-WSGI_APPLICATION = "saloboard.wsgi.application"
+# WSGI_APPLICATION = "saloboard.wsgi.application"  # вимкнено — використовується Daphne (ASGI)
 
 
 # Database

@@ -55,4 +55,5 @@ EXPOSE 8000
 ENTRYPOINT ["/app/scripts/entrypoint.sh"]
 
 # За замовчуванням запускаємо dev сервер
-CMD ["python", "manage.py", "runserver", "0.0.0.0:8000"]
+# Запускаємо Daphne для підтримки HTTP та WebSocket
+CMD ["daphne", "-b", "0.0.0.0", "-p", "8000", "saloboard.asgi:application"]
