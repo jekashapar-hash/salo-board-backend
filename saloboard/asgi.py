@@ -7,7 +7,7 @@ For more information on this file, see
 https://docs.djangoproject.com/en/6.0/howto/deployment/asgi/
 """
 
-import os
+import os  # noqa: I001
 from django.core.asgi import get_asgi_application
 
 # 1. Спочатку встановлюємо налаштування
@@ -17,9 +17,9 @@ os.environ.setdefault("DJANGO_SETTINGS_MODULE", "saloboard.settings")
 django_asgi_app = get_asgi_application()
 
 # 3. ПІСЛЯ ЦЬОГО імпортуємо те, що використовує моделі
-from channels.routing import ProtocolTypeRouter, URLRouter
-import salocore.routing
-from salocore.middleware import JwtAuthMiddleware
+from channels.routing import ProtocolTypeRouter, URLRouter  # noqa: E402, I001
+import salocore.routing  # noqa: E402
+from salocore.middleware import JwtAuthMiddleware  # noqa: E402
 
 application = ProtocolTypeRouter(
     {
