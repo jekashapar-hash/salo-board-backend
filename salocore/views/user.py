@@ -6,7 +6,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from ..models import Submission, TeamMember, Tournament, TournamentAdmin, TournamentJury
+from ..models import Submission, TeamMember, Tournament, TournamentAdmin, TournamentJury, UserTelegramProfile
 from ..serializers import (
     UserNameSerializer,
     UserProfileSerializer,
@@ -248,3 +248,17 @@ class TelegramLinkView(APIView):
         bot_username = os.getenv("TELEGRAM_BOT_USERNAME", "")
         link = f"https://t.me/{bot_username}?start={request.user.pk}"
         return Response({"link": link}, status=status.HTTP_200_OK)
+
+
+class UserTelegramStatusView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    @extend_schema(
+        summary="Статус підключення Telegram",
+        description="Повертає булеве значення, чи підключив користувач Telegram-бота.",
+        responses={200: {"type": "object", "properties": {"connected": {"type": "boolean"}}}},
+        tags=["User"],
+    )
+    def get(self, request):
+        connected = UserTelegramProfile.objects.filter(user=request.user).exists()
+        return Response({"connected": connected}, status=status.HTTP_200_OK)
