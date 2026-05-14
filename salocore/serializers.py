@@ -302,6 +302,16 @@ class NotificationSerializer(serializers.ModelSerializer):
         read_only_fields = ("id", "created_at", "how_long_active", "status", "user")
 
 
+class TeamInvitationSerializer(serializers.ModelSerializer):
+    firstName = serializers.CharField(source="user.first_name", read_only=True)
+    lastName = serializers.CharField(source="user.last_name", read_only=True)
+
+    class Meta:
+        model = Notification
+        fields = ["id", "firstName", "lastName", "created_at"]
+        read_only_fields = ["id", "firstName", "lastName", "created_at"]
+
+
 class LeaderboardRoundShortSerializer(serializers.Serializer):
     roundId = serializers.IntegerField(source="round_id")
     roundTitle = serializers.CharField(source="round_title")

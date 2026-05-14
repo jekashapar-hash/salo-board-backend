@@ -7,7 +7,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from ..models import Notification, Team, TeamMember, Tournament
-from ..serializers import NotificationSerializer, TeamSerializer
+from ..serializers import TeamInvitationSerializer, TeamSerializer
 
 
 class TeamListView(APIView):
@@ -93,7 +93,7 @@ class TeamInvitationListView(APIView):
     @extend_schema(
         summary="Список діючих запрошень до конкретної команди",
         description="Повертає список всіх актуальних (не прострочених та не архівованих) запрошень, надісланих вказаною командою.",
-        responses={200: NotificationSerializer(many=True)},
+        responses={200: TeamInvitationSerializer(many=True)},
     )
     def get(self, request, team_id):
         # Перевірка, чи команда існує
@@ -117,7 +117,7 @@ class TeamInvitationListView(APIView):
             action_url__contains=f"team_id={team_id}",
         ).order_by("-created_at")
 
-        serializer = NotificationSerializer(invites, many=True)
+        serializer = TeamInvitationSerializer(invites, many=True)
         return Response(serializer.data)
 
 

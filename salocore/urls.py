@@ -211,10 +211,15 @@ urlpatterns = [
         name="admin-tournament-archive",
     ),
     path("admin/tournaments/<int:tournament_id>/jury", AdminTournamentJuryView.as_view()),
+    path("admin/tournaments/<int:tournament_id>/jury/invites", AdminTournamentJuryInvitationListView.as_view()),
     path("admin/tournaments/<int:tournament_id>/jury/<int:user_id>", AdminTournamentJuryDetailView.as_view()),
     path(
         "admin/tournaments/<int:tournament_id>/admin",
         AdminTournamentAdminsView.as_view(),
+    ),
+    path(
+        "admin/tournaments/<int:tournament_id>/admin/invites",
+        AdminTournamentAdminInvitationListView.as_view(),
     ),
     path(
         "admin/tournaments/<int:tournament_id>/admin/<int:user_id>",
