@@ -1,6 +1,7 @@
 from django.contrib.auth import get_user_model
 from django.db.models import Q
 from django.shortcuts import get_object_or_404
+from django.utils import timezone
 from drf_spectacular.utils import (
     extend_schema,
 )
@@ -12,9 +13,10 @@ from rest_framework.views import APIView
 from salocore.services.notification.deps import get_notification_service
 from salocore.use_cases.tournament_cheker.deps import get_tournament_cheker
 
-from ..models import Tournament, TournamentAdmin, TournamentJury
+from ..models import Notification, Tournament, TournamentAdmin, TournamentJury
 from ..permissions import IsTournamentCreator, IsTournamentCreatorOrReadOnly
 from ..serializers import (
+    TeamInvitationSerializer,
     TournamentAdminSerializer,
     TournamentDetailSerializer,
     TournamentJurySerializer,
@@ -367,3 +369,51 @@ class AdminTournamentAdminsView(APIView):
         admin = TournamentAdmin.objects.create(tournament=tournament, user=user)
         serializer = TournamentAdminSerializer(admin)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+
+class AdminTournamentJuryInvitationListView(APIView):
+    permission_classes = [IsAdminUser, IsTournamentCreator]
+
+    @extend_schema(
+        summary="Список активних запрошень до журі турніру",
+        description="Повертає список всіх актуальних запрошень до журі для конкретного турніру.",
+        responses={200: TeamInvitationSerializer(many=True)},
+    )
+    def get(self, request, tournament_id):
+        tournament = get_object_or_404(Tournament, id=tournament_id)
+        self.check_object_permissions(request, tournament)
+
+        now = timezone.now()
+        invites = Notification.objects.filter(
+            type=Notification.Type.JURY_INVITE,
+            status__in=[Notification.Status.UNREAD, Notification.Status.READ],
+            how_long_active__gt=now,
+            action_url__exact=f"/tournaments/{tournament_id}",
+        ).order_by("-created_at")
+
+        serializer = TeamInvitationSerializer(invites, many=True)
+        return Response(serializer.data)
+
+
+class AdminTournamentAdminInvitationListView(APIView):
+    permission_classes = [IsAdminUser, IsTournamentCreator]
+
+    @extend_schema(
+        summary="Список активних запрошень до адміністраторів турніру",
+        description="Повертає список всіх актуальних запрошень до адміністраторів для конкретного турніру.",
+        responses={200: TeamInvitationSerializer(many=True)},
+    )
+    def get(self, request, tournament_id):
+        tournament = get_object_or_404(Tournament, id=tournament_id)
+        self.check_object_permissions(request, tournament)
+
+        now = timezone.now()
+        invites = Notification.objects.filter(
+            type=Notification.Type.ADMIN_INVITE,
+            status__in=[Notification.Status.UNREAD, Notification.Status.READ],
+            how_long_active__gt=now,
+            action_url__exact=f"/tournaments/{tournament_id}",
+        ).order_by("-created_at")
+
+        serializer = TeamInvitationSerializer(invites, many=True)
+        return Response(serializer.data)
