@@ -112,4 +112,3 @@ admin.site.register(CriterionEvaluation)
 admin.site.register(RequirementEvaluation)
 admin.site.register(Chat)
 admin.site.register(Message)
-
