@@ -163,14 +163,13 @@ STORAGES = {
         "BACKEND": "django.core.files.storage.FileSystemStorage",
     },
     "staticfiles": {
-        "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
+        # CompressedStaticFilesStorage — только gzip/brotli сжатие, без manifest.
+        # Используется вместо CompressedManifestStaticFilesStorage, потому что
+        # Jazzmin/bootswatch ссылаются в CSS на .map файлы, которых нет в пакете,
+        # и ManifestStaticFilesStorage падает с MissingFileError.
+        "BACKEND": "whitenoise.storage.CompressedStaticFilesStorage",
     },
 }
-
-
-# Jazzmin/bootswatch CSS ссылаются на .map файлы, которых нет в пакете.
-# False — не падать при отсутствии referenced файлов, а молча пропускать.
-WHITENOISE_MANIFEST_STRICT = False
 
 
 AUTH_USER_MODEL = "salocore.User"
