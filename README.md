@@ -67,7 +67,7 @@ macOS / Linux:
 
 5. Запустити сервер:
 
-    uv run python manage.py runserver
+    uv run manage.py runserver
 
 Готово. Сервер доступний за адресою http://127.0.0.1:8000
 
@@ -266,8 +266,8 @@ Celery Beat запускає автоматичну перевірку стат�
     uv run ruff check .                # лінтинг
     uv run ruff check . --fix          # лінтинг з виправленням
     uv run ruff format .               # форматування
-    uv run python manage.py makemigrations
-    uv run python manage.py shell
+    uv run manage.py makemigrations
+    uv run manage.py shell
 
 
 Структура проекту
