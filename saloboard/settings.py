@@ -167,6 +167,10 @@ STORAGES = {
     },
 }
 
+# Jazzmin/bootswatch CSS ссылаются на .map файлы, которых нет в пакете.
+# False — не падать при отсутствии referenced файлов, а молча пропускать.
+WHITENOISE_MANIFEST_STRICT = False
+
 AUTH_USER_MODEL = "salocore.User"
 
 
