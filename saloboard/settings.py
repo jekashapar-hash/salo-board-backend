@@ -99,6 +99,9 @@ TEMPLATES = [
 IS_DEV_DATABASE = os.getenv("IS_DEV_DATABASE", "True") == "True"
 
 if IS_DEV_DATABASE:
+    # Переконаємося, що папка для SQLite існує
+    (BASE_DIR / "db").mkdir(parents=True, exist_ok=True)
+    
     DATABASES = {
         "default": {
             "ENGINE": "django.db.backends.sqlite3",
