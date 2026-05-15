@@ -152,16 +152,31 @@ WebSocket
 Telegram Webhook (опціонально)
 ------------------------------
 
-Бот приймає оновлення через webhook:
+Бот використовується для надсилання сповіщень. Для роботи у режимі Webhook:
 
-    POST /api/webhooks/telegram/
+1. Отримати токен у @BotFather та додати в `.env`:
+    ```env
+    TELEGRAM_BOT_TOKEN=your_token
+    TELEGRAM_BOT_USERNAME=your_bot_name
+    ```
 
-Змінні для бота в .env (якщо потрібен бот):
+2. Налаштувати публічну адресу (HTTPS):
+    Telegram працює лише через **HTTPS**. Сертифікат має бути валідним, інакше виникне `SSL error`.
 
-    TELEGRAM_BOT_TOKEN=<токен від @BotFather>
-    TELEGRAM_BOT_USERNAME=<username бота>
+3. Зареєструвати Webhook:
+    ```
+    https://api.telegram.org/bot<TOKEN>/setWebhook?url=https://<DOMAIN>/api/webhooks/telegram/
+    ```
+    *Важливо: URL має закінчуватися на `/api/webhooks/telegram/`*
 
-Без цих змінних всі інші функції API працюють в штатному режимі.
+4. Перевірити статус:
+    ```
+    https://api.telegram.org/bot<TOKEN>/getWebhookInfo
+    ```
+
+Без налаштування Webhook та SSL бот не зможе приймати команди, але решта функцій API працюватимуть.
+
+
 
 
 Запуск Celery локально (опціонально)
