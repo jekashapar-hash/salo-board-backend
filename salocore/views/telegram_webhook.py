@@ -53,4 +53,3 @@ def telegram_webhook(request):
         logger.exception("[TG WEBHOOK] unhandled error")
 
     return JsonResponse({"ok": True})
-
