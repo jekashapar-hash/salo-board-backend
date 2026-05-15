@@ -41,7 +41,7 @@ macOS / Linux:
 1. Клонувати репозиторій:
 
     git clone <repo-url>
-    cd saloboard
+    cd salo-board-backend
 
 2. Встановити залежності:
 
@@ -52,14 +52,18 @@ macOS / Linux:
     SECRET_KEY=any-random-secret-key-for-local-dev
     DEBUG=True
     ALLOWED_HOSTS=127.0.0.1,localhost
+    CORS_ALLOWED_ORIGINS=http://localhost:5173,http://127.0.0.1:8000
+    CSRF_TRUSTED_ORIGINS=http://localhost:5173,http://127.0.0.1:8000
     IS_DEV_DATABASE=True
 
-   IS_DEV_DATABASE=True — використовується SQLite, нічого додатково не потрібно.
+   Повний список параметрів: [.env.example](.env.example)
+
+   `IS_DEV_DATABASE=True` — використовується SQLite, нічого додатково не потрібно.
 
 4. Застосувати міграції та створити суперкористувача:
 
-    uv run python manage.py migrate
-    uv run python manage.py createsuperuser
+    uv run manage.py migrate
+    uv run manage.py createsuperuser
 
 5. Запустити сервер:
 

@@ -74,6 +74,7 @@ Thumbs.db
 # dotenv
 .env
 .env.*
+!.env.example
 *.env
 
 # Jupyter Notebook
