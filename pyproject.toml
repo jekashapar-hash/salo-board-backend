@@ -20,6 +20,7 @@ dependencies = [
     "django-celery-beat>=2.6.0",
     "dj-database-url>=2.3.0",
     "psycopg[binary]>=3.2.4",
+    "whitenoise>=6.12.0",
 ]
 
 [dependency-groups]
